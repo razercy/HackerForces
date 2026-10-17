@@ -18,6 +18,8 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 const DEMO_USERS: { email: string; name: string; roles: ElevatedRole[] }[] = [
   { email: "setter@demo.test", name: "Demo Setter", roles: ["problem_setter"] },
   { email: "reviewer@demo.test", name: "Demo Reviewer", roles: ["reviewer"] },
+  // A second person for the two-person rule: confirms reviewers' violation decisions.
+  { email: "admin@demo.test", name: "Demo Admin", roles: ["admin"] },
   { email: "contestant@demo.test", name: "Demo Contestant", roles: [] },
 ];
 

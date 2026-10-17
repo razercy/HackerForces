@@ -23,7 +23,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
       </div>
       <p className="text-xs text-zinc-500">
         Ranked by problems solved, then penalty: minutes to each accepted solution plus {PENALTY_MINUTES} minutes per earlier rejected attempt.
-        Compilation errors and example runs are not penalised.
+        Compilation errors and example runs are not penalised. ✕ / †: a problem excluded after a human integrity review confirmed by a second reviewer.
       </p>
 
       {rows.length === 0 ? (
@@ -48,12 +48,25 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
               {rows.map((r) => (
                 <tr key={r.userId} className={`border-b border-zinc-100 dark:border-zinc-900 ${viewer?.userId === r.userId ? "bg-blue-50 dark:bg-blue-950/40" : ""}`}>
                   <td className="py-2 pr-3">{r.rank}</td>
-                  <td className="py-2 pr-3">{r.name}</td>
+                  <td className="py-2 pr-3">
+                    {r.name}
+                    {r.hasExclusion && (
+                      <sup className="ml-1 text-zinc-500" title="One or more problems excluded after integrity review">
+                        †
+                      </sup>
+                    )}
+                  </td>
                   <td className="py-2 pr-3 text-right font-medium">{r.solved}</td>
                   <td className="py-2 pr-3 text-right">{r.penalty}</td>
                   {contest.labels.map((l) => {
                     const c = r.cells[l];
                     if (!c) return <td key={l} />;
+                    if (c.excluded)
+                      return (
+                        <td key={l} className="py-2 text-center text-zinc-400" title="Excluded after integrity review">
+                          ✕
+                        </td>
+                      );
                     return (
                       <td key={l} className="py-2 text-center">
                         {c.solved ? (

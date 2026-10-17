@@ -10,6 +10,7 @@ import { isUuid } from "@/lib/validation/ids";
 import { submissionInputSchema } from "@/lib/validation/submissions";
 import type { Verdict } from "@/lib/submissions";
 import { hasCurrentAcknowledgement } from "./acknowledgements";
+import { violationsInEffect } from "@/lib/server/review/cases";
 import { canManageContest } from "./policy";
 import type { Principal } from "./roles";
 
@@ -183,8 +184,8 @@ export async function listOwnSubmissions(db: Db, viewer: Principal, contestSlug:
 
 // ---------------------------------------------------------------- standings
 
-export type StandingsCell = { solved: boolean; rejected: number; solvedAtMinute: number | null; pending: boolean };
-export type StandingsRow = { rank: number; userId: string; name: string; solved: number; penalty: number; cells: Record<string, StandingsCell> };
+export type StandingsCell = { solved: boolean; rejected: number; solvedAtMinute: number | null; pending: boolean; excluded: boolean };
+export type StandingsRow = { rank: number; userId: string; name: string; solved: number; penalty: number; cells: Record<string, StandingsCell>; hasExclusion: boolean };
 
 /** Verdicts that do not cost penalty (the program never ran). */
 const NO_PENALTY: ReadonlySet<Verdict> = new Set(["compilation_error"]);
@@ -207,7 +208,7 @@ export async function getStandings(db: Db, viewer: Principal | null, contestSlug
   const contestInfo = { slug: c.slug, title: c.title, phase, labels: problems.map((p) => p.label) };
   if (phase === "upcoming" || phase === "draft") return { contest: contestInfo, rows: [] as StandingsRow[] };
 
-  const [participants, subs] = await Promise.all([
+  const [participants, subs, violations] = await Promise.all([
     db
       .select({ userId: contestParticipant.userId, name: user.name })
       .from(contestParticipant)
@@ -226,17 +227,24 @@ export async function getStandings(db: Db, viewer: Principal | null, contestSlug
         ),
       )
       .orderBy(asc(submission.createdAt)),
+    violationsInEffect(db, c.id),
   ]);
 
   const labelOf = new Map(problems.map((p) => [p.problemId, p.label]));
   const rows = new Map<string, StandingsRow>(
-    participants.map((p) => [p.userId, { rank: 0, userId: p.userId, name: p.name, solved: 0, penalty: 0, cells: {} }]),
+    participants.map((p) => [p.userId, { rank: 0, userId: p.userId, name: p.name, solved: 0, penalty: 0, cells: {}, hasExclusion: false }]),
   );
   for (const s of subs) {
     const row = rows.get(s.userId);
     const label = labelOf.get(s.problemId);
     if (!row || !label) continue;
-    const cell = (row.cells[label] ??= { solved: false, rejected: 0, solvedAtMinute: null, pending: false });
+    const cell = (row.cells[label] ??= { solved: false, rejected: 0, solvedAtMinute: null, pending: false, excluded: false });
+    // A confirmed, second-person-approved violation excludes the problem for this contestant.
+    if (violations.has(`${s.userId}|${s.problemId}`)) {
+      cell.excluded = true;
+      row.hasExclusion = true;
+      continue;
+    }
     if (cell.solved) continue; // Attempts after the first accept do not matter.
     if (s.status !== "judged") {
       cell.pending = true;

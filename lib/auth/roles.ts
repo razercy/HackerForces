@@ -13,6 +13,7 @@ export const PERMISSIONS = [
   "problem:manage",
   "problem:read_hidden", // hidden tests, reference solutions
   "integrity:review", // telemetry, snapshots, assessments, review cases
+  "integrity:confirm", // second-person confirmation of violation decisions (admins)
   "role:manage",
   "audit:read",
 ] as const;

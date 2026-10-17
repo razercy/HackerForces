@@ -5,6 +5,7 @@ import { scoreAssessment, RULESET_VERSION, type Cohort } from "@/lib/integrity/b
 import { FEATURE_NAMES, FEATURE_SET_VERSION, extractFeatures, type AnalysisInput, type Features } from "@/lib/integrity/features";
 import type { Db, Tx } from "@/lib/server/db";
 import { analysisJob, anomalyAssessment, contest, featureVector, ideSession, problem, submission, telemetryEvent } from "@/lib/server/db/schema";
+import { openCaseForAssessment } from "@/lib/server/review/cases";
 import { frozenTemplatesFor, snippetsInEffect } from "@/lib/server/services/templates";
 
 export type Subject = { userId: string; contestId: string; problemId: string };
@@ -138,7 +139,7 @@ export async function runAnalysis(db: Db, s: Subject, now: Date): Promise<Analys
     .limit(1);
   if (latest && latest.featureVectorId === fv!.id && latest.referenceDigest === referenceDigest && latest.rulesetVersion === RULESET_VERSION) return "unchanged";
 
-  await db.insert(anomalyAssessment).values({
+  const [inserted] = await db.insert(anomalyAssessment).values({
     ...s,
     featureVectorId: fv!.id,
     rulesetVersion: RULESET_VERSION,
@@ -150,7 +151,9 @@ export async function runAnalysis(db: Db, s: Subject, now: Date): Promise<Analys
     evidence: extraction.evidence,
     warnings: [...result.warnings, ...extraction.dataQuality.warnings],
     computedAt: now,
-  });
+  }).returning({ id: anomalyAssessment.id });
+  // An elevated score asks for human review; it decides nothing by itself.
+  if (result.band === "elevated") await openCaseForAssessment(db, s, inserted!.id, now);
   return "assessed";
 }
 

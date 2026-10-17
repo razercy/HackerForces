@@ -101,6 +101,39 @@ never treated as a signal.
 and have not been fitted to data. Phase 6 measures them on clearly labelled
 synthetic scenarios. The project makes no claim about real-world accuracy.
 
+## Human review (Phase 5)
+
+```
+elevated assessment ──► review_case (open) ◄── reviewer opens manually
+                              │
+            reviewer records decision (rationale ≥ 30 chars, assessment version)
+             ├── no concern / inconclusive ──────────────► closed
+             └── confirmed violation ──► awaiting_confirmation
+                                           │  a *different* admin
+                                           ├── confirms ──► closed, takes effect
+                                           └── rejects  ──► open again
+closed ──(reopen with a reason)──► open ──► new decision supersedes the old one
+```
+
+- **Effect.** A violation takes effect only after confirmation. For each
+  subject, the latest *final* decision wins: "no concern" or "inconclusive" at
+  the time they were recorded, or a violation at the time it was confirmed.
+  While a violation is in effect, that problem is excluded for that contestant
+  in the standings (shown as ✕ / †). A later "no concern" reverses the effect.
+  Nothing happens automatically on a score alone.
+- **Contestant.** The contestant sees a neutral notice, the reviewer's rationale
+  and whether the decision is still in effect, and can send written responses.
+  Reviewer identities are not shown to them.
+- **Safeguards.**
+  - Decisions, confirmations, notes and responses are append-only (DB triggers).
+  - A trigger rejects confirmation by the decision's author.
+  - Separation of duties: nobody acts on their own work or a contest they
+    created. They can read the case, but every action is refused.
+  - Every view, decision, confirmation, note, reopen and response is audited
+    (`/admin/audit`).
+- **Queue rules.** Only the first elevated assessment of a subject opens a case,
+  to avoid flapping. Later re-scores appear in the queue as "new since decision".
+
 ## Known limitations
 
 - **Telemetry comes from the client and can be forged.** A determined user can

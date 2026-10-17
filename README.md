@@ -42,7 +42,7 @@ Requires Node.js 22 or later.
    ```bash
    npm run seed
    ```
-   This creates `setter@demo.test`, `reviewer@demo.test` and `contestant@demo.test`, plus a published "Demo Round" contest that starts one minute after seeding. Running it again is safe.
+   This creates `setter@demo.test`, `reviewer@demo.test`, `admin@demo.test` and `contestant@demo.test`, plus a published "Demo Round" contest that starts one minute after seeding. Running it again is safe.
 
 ## Checks
 

@@ -7,6 +7,7 @@ import { LocalTime } from "@/components/time";
 import { getCurrentUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
+import { getContestantNotices } from "@/lib/server/review/cases";
 import { getContestForViewer } from "@/lib/server/services/contests";
 import { acknowledgeNoticeAction, registerAction } from "../actions";
 
@@ -14,6 +15,7 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
   const { slug } = await params;
   const viewer = await getCurrentUser();
   const c = await loadOr404(getContestForViewer(getDb(), viewer, slug));
+  const notices = viewer ? await getContestantNotices(getDb(), viewer, c.id) : [];
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
@@ -39,6 +41,16 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
           </nav>
         )}
       </header>
+
+      {notices.length > 0 && (
+        <p role="status" className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+          There is an integrity review decision about your participation in this contest.{" "}
+          <Link href={`/contests/${c.slug}/integrity`} className="underline">
+            Read it and respond
+          </Link>
+          .
+        </p>
+      )}
 
       {c.description && <Markdown>{c.description}</Markdown>}
 
