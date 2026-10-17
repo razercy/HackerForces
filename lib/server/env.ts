@@ -6,6 +6,11 @@ const envSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   BETTER_AUTH_URL: z.url(),
+  JUDGE_PROVIDER: z.enum(["mock"]).default("mock"),
+  /** Artificial latency so the queued → running → judged flow is visible in development. */
+  MOCK_JUDGE_DELAY_MS: z.coerce.number().int().min(0).max(10_000).default(1_500),
+  /** Shared secret for the judge-drain cron endpoint. Optional locally. */
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 export type ServerEnv = z.infer<typeof envSchema>;

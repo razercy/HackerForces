@@ -1,7 +1,7 @@
 /** Errors that services throw and entry points (Route Handlers, Server Actions) translate. */
 export class AppError extends Error {
   constructor(
-    readonly code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "INVALID_INPUT",
+    readonly code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "INVALID_INPUT" | "RATE_LIMITED",
     message: string,
     readonly status: number,
   ) {

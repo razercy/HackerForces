@@ -25,6 +25,18 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           <LocalTime iso={c.startsAt.toISOString()} /> – <LocalTime iso={c.endsAt.toISOString()} />
         </p>
+        {c.problemsVisible && (
+          <nav aria-label="Contest" className="flex gap-4 text-sm">
+            <Link href={`/contests/${c.slug}/standings`} className="underline">
+              Standings
+            </Link>
+            {viewer && (
+              <Link href={`/contests/${c.slug}/submissions`} className="underline">
+                My submissions
+              </Link>
+            )}
+          </nav>
+        )}
       </header>
 
       {c.description && <Markdown>{c.description}</Markdown>}

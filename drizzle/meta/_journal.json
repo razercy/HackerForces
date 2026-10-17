@@ -22,6 +22,20 @@
       "when": 1792218319137,
       "tag": "0002_contests_problems",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792219838684,
+      "tag": "0003_submissions_judge",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792219840147,
+      "tag": "0004_submission_immutable",
+      "breakpoints": true
     }
   ]
 }

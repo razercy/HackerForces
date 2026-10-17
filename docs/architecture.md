@@ -77,6 +77,44 @@ deleted.
 **`cacheComponents` is off.** Nearly every page is per-user. It can be revisited
 during UI polish.
 
+## Submissions and judging
+
+```
+POST /api/contests/:slug/submissions
+  └─ tx: INSERT submission (immutable source + sha256)  +  INSERT judge_job
+  └─ 201 {id}  →  after(): drainJobs()           ← latency optimisation only
+GET /api/submissions/:id   (client polls)
+  └─ if job claimable (pending, or lease expired) → after(): drainJobs()
+GET /api/cron/judge        (Vercel Cron, Bearer CRON_SECRET) → drainJobs()   ← safety net
+```
+
+- **Durable queue in Postgres.** `judge_job` rows are claimed with
+  `SELECT … FOR UPDATE SKIP LOCKED` and a 60 s lease. A function that dies
+  mid-job simply lets the lease expire, and the next poll or cron run reclaims
+  it. Nothing is held in memory.
+- **Fencing.** `attempts` is incremented on every claim, and results are written
+  only `WHERE attempts = <my attempt> AND status = 'claimed'`. A slow worker
+  whose lease was taken over cannot overwrite the newer attempt's verdict.
+- **Retries.** Infrastructure errors (`JudgeUnavailableError`, timeouts) retry
+  with exponential backoff (5 s, 10 s, …). After 3 attempts the job is marked
+  dead and the submission becomes `failed`, which is shown as a judge error and
+  never counts against the contestant.
+- **Immutability.** A trigger rejects any UPDATE to the submitted columns and
+  any DELETE. A CHECK constraint requires `source_sha256 = sha256(source)`, so
+  the stored hash always matches the stored bytes.
+- **Throttles.** At most one submission per 5 s and 3 pending per user per
+  contest. Both are checked while holding the participant row lock, so they
+  are race-free.
+- **The mock judge never runs code.** It derives a verdict from the source text
+  (`// @mock-verdict wrong_answer test=3`, a missing `main` gives a compilation
+  error, anything else is accepted). The real judge is a separate
+  `JudgeProvider` that talks to an isolated sandbox (Phase 7).
+- **Hidden tests leave the database only to go to the judge.** Contestants see
+  the verdict, counts and the ordinal of the first failing test, never test
+  data.
+- **Vercel note.** Hobby-plan cron runs daily, so the cron is only a backstop.
+  Normal latency comes from `after()` plus poll-triggered recovery.
+
 ## Testing
 
 - `tests/unit`: pure logic, such as the permission matrix.
