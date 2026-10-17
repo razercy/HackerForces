@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Python evaluation environment (third-party JS ships inside site-packages).
+    "ml/.venv/**",
   ]),
 ]);
 

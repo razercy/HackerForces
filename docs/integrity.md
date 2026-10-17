@@ -98,8 +98,9 @@ never treated as a signal.
   ruleset, feature-set and input versions.
 
 **These weights and thresholds are uncalibrated.** They were chosen by reasoning
-and have not been fitted to data. Phase 6 measures them on clearly labelled
-synthetic scenarios. The project makes no claim about real-world accuracy.
+and have not been fitted to data. [docs/evaluation.md](evaluation.md) measures them on
+clearly labelled synthetic scenarios, including where they fail. The project makes
+no claim about real-world accuracy.
 
 ## Human review (Phase 5)
 

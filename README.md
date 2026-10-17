@@ -56,6 +56,33 @@ npm run check
 npm run build
 ```
 
+## Evaluation on synthetic data
+
+The evaluation runs offline and is not part of the deployed app. It needs Python 3.12 or later.
+
+1. Create the virtual environment:
+   ```bash
+   python -m venv ml/.venv
+   ```
+2. Install the pinned dependencies. On Windows:
+   ```bash
+   ml/.venv/Scripts/python -m pip install -r ml/requirements.txt
+   ```
+   On macOS or Linux:
+   ```bash
+   ml/.venv/bin/python -m pip install -r ml/requirements.txt
+   ```
+3. Generate the dataset, then evaluate and write `docs/evaluation.md`:
+   ```bash
+   npm run eval
+   ```
+4. Run the Python tests:
+   ```bash
+   npm run eval:test
+   ```
+
+All of the evaluation data is **synthetic**. See [docs/evaluation.md](docs/evaluation.md) for what the results do and do not mean.
+
 ## Deploying to Vercel
 
 1. Import the repository into Vercel. Use the Next.js framework preset with default build settings.

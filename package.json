@@ -16,7 +16,11 @@
     "grant-role": "tsx --conditions=react-server scripts/grant-role.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "seed": "tsx --conditions=react-server scripts/seed.ts",
-    "analyze": "tsx --conditions=react-server scripts/analyze.ts"
+    "analyze": "tsx --conditions=react-server scripts/analyze.ts",
+    "eval:generate": "tsx eval/generate.ts",
+    "eval:run": "node scripts/eval-run.mjs",
+    "eval": "npm run eval:generate && npm run eval:run",
+    "eval:test": "node scripts/eval-test.mjs"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",
