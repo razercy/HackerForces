@@ -14,6 +14,7 @@ import {
   unpublishContest,
   updateContest,
 } from "@/lib/server/services/contests";
+import { addSnippet, retireSnippet } from "@/lib/server/services/templates";
 
 function contestFromForm(fd: FormData) {
   return {
@@ -84,4 +85,21 @@ export async function unpublishContestAction(contestId: string, _prev: ActionSta
   }
   refresh();
   return { ok: true, message: "Moved back to draft" };
+}
+
+export async function addSnippetAction(contestId: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
+  try {
+    const actor = await requireUser();
+    await addSnippet(getDb(), actor, contestId, { name: str(fd, "name"), source: str(fd, "source") });
+  } catch (err) {
+    return toActionState(err, fd);
+  }
+  refresh();
+  return { ok: true, message: "Snippet approved" };
+}
+
+export async function retireSnippetAction(contestId: string, snippetId: string): Promise<void> {
+  const actor = await requireUser();
+  await retireSnippet(getDb(), actor, contestId, snippetId);
+  refresh();
 }

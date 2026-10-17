@@ -16,6 +16,11 @@ export async function SiteHeader() {
           <Link href="/contests" className="hover:underline">
             Contests
           </Link>
+          {user && (
+            <Link href="/templates" className="hover:underline">
+              Templates
+            </Link>
+          )}
           {canManage && (
             <Link href="/manage" className="hover:underline">
               Manage

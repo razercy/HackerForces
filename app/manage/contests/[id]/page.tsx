@@ -8,11 +8,16 @@ import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { getContestForManagement } from "@/lib/server/services/contests";
 import { listManageableProblems } from "@/lib/server/services/problems";
+import { listSnippets } from "@/lib/server/services/templates";
+import { SnippetForm } from "@/components/template-forms";
+import { LocalTime } from "@/components/time";
 import { isUuid } from "@/lib/validation/ids";
 import {
   attachProblemAction,
   detachProblemAction,
+  addSnippetAction,
   publishContestAction,
+  retireSnippetAction,
   unpublishContestAction,
   updateContestAction,
 } from "../actions";
@@ -29,7 +34,9 @@ export default async function EditContestPage({ params }: PageProps<"/manage/con
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const user = await requireUser();
-  const [c, problems] = await loadOr404(Promise.all([getContestForManagement(getDb(), user, id), listManageableProblems(getDb(), user)]));
+  const [c, problems, snippets] = await loadOr404(
+    Promise.all([getContestForManagement(getDb(), user, id), listManageableProblems(getDb(), user), listSnippets(getDb(), user, id)]),
+  );
   const attached = new Set(c.problems.map((p) => p.problemId));
   const editable = c.phase === "draft" || c.phase === "upcoming";
 
@@ -98,6 +105,43 @@ export default async function EditContestPage({ params }: PageProps<"/manage/con
             suggestedLabel={nextLabel(c.problems.map((p) => p.label))}
           />
         )}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+        <div>
+          <h2 className="text-lg font-semibold">Approved snippets</h2>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Code every contestant may use (e.g. a provided I/O helper). Matching code is treated as legitimate reuse in integrity analysis. The editor&apos;s starter
+            code is always approved.
+          </p>
+        </div>
+        {snippets.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {snippets.map((s) => (
+              <li key={s.id} className="flex items-start justify-between gap-4 rounded-md bg-zinc-50 p-3 text-sm dark:bg-zinc-900">
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {s.name}
+                    {s.retiredAt && (
+                      <span className="ml-2 text-xs font-normal text-zinc-500">
+                        retired <LocalTime iso={s.retiredAt.toISOString()} />
+                      </span>
+                    )}
+                  </p>
+                  <pre className="mt-1 max-h-32 overflow-auto font-mono text-xs">{s.source}</pre>
+                </div>
+                {!s.retiredAt && (
+                  <form action={retireSnippetAction.bind(null, c.id, s.id)}>
+                    <SubmitButton variant="danger" pendingLabel="Retiring…">
+                      Retire
+                    </SubmitButton>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <SnippetForm action={addSnippetAction.bind(null, c.id)} />
       </section>
 
       <section className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">

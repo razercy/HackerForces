@@ -50,6 +50,20 @@
       "when": 1792224460565,
       "tag": "0006_submission_guard_ide",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792225949251,
+      "tag": "0007_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792225950724,
+      "tag": "0008_integrity_guards",
+      "breakpoints": true
     }
   ]
 }

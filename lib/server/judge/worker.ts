@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, eq, lt, lte, or } from "drizzle-orm";
 import type { Db } from "@/lib/server/db";
 import { judgeJob, problem, problemExample, problemTest, submission } from "@/lib/server/db/schema";
+import { enqueueAnalysis } from "@/lib/server/integrity/pipeline";
 import type { JudgeProvider, JudgeRequest, JudgeResult } from "./types";
 
 /** A claimed job is exclusively ours until the lease expires. */
@@ -97,7 +98,7 @@ async function recordResult(db: Db, claim: Claim, result: JudgeResult, providerN
   return db.transaction(async (tx) => {
     const won = await tx.update(judgeJob).set({ status: "done", leaseUntil: null, lastError: null }).where(holdsLease(claim)).returning({ id: judgeJob.id });
     if (won.length === 0) return false; // Lease was lost; a newer attempt owns the job.
-    await tx
+    const updated = await tx
       .update(submission)
       .set({
         status: "judged",
@@ -111,7 +112,11 @@ async function recordResult(db: Db, claim: Claim, result: JudgeResult, providerN
         judgeProvider: providerName,
         judgedAt: now,
       })
-      .where(eq(submission.id, claim.submissionId));
+      .where(eq(submission.id, claim.submissionId))
+      .returning({ kind: submission.kind, userId: submission.userId, contestId: submission.contestId, problemId: submission.problemId });
+    // Every judged submission may change the assessment target; enqueue in the same transaction.
+    const judged = updated[0];
+    if (judged?.kind === "submission") await enqueueAnalysis(tx, { userId: judged.userId, contestId: judged.contestId, problemId: judged.problemId }, now);
     return true;
   });
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EDITOR_STARTER_TEMPLATE } from "@/lib/editor-template";
 import { LANGUAGE_LABELS } from "@/lib/languages";
 import { isTerminal, type SubmissionKind, type SubmissionStatus, type Verdict } from "@/lib/submissions";
 import { VerdictBadge } from "@/components/verdict-badge";
@@ -9,16 +10,6 @@ import type { ViewUpdate } from "@codemirror/view";
 import { TelemetryRecorder, type RecorderStatus } from "@/lib/telemetry/recorder";
 import { CodeEditor, type CodeEditorHandle } from "./code-editor";
 
-const TEMPLATE = `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    return 0;
-}
-`;
 
 type Result = {
   id: string;
@@ -184,7 +175,7 @@ export function Workspace({ contestSlug, label, noticeHref }: { contestSlug: str
           initialValue={() => {
             const draft = readDraft(key);
             restoredDraft.current = draft != null;
-            return draft ?? TEMPLATE;
+            return draft ?? EDITOR_STARTER_TEMPLATE;
           }}
           onChange={onChange}
           keyBindings={keyBindings}

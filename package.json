@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "grant-role": "tsx --conditions=react-server scripts/grant-role.ts",
     "check": "npm run lint && npm run typecheck && npm test",
-    "seed": "tsx --conditions=react-server scripts/seed.ts"
+    "seed": "tsx --conditions=react-server scripts/seed.ts",
+    "analyze": "tsx --conditions=react-server scripts/analyze.ts"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",

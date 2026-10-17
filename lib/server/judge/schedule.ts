@@ -2,6 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { getDb } from "@/lib/server/db";
 import { getJudge } from "./index";
+import { drainAnalysisJobs } from "@/lib/server/integrity/pipeline";
 import { drainJobs } from "./worker";
 
 /**
@@ -14,6 +15,8 @@ export function scheduleDrain(): void {
   after(async () => {
     try {
       await drainJobs(getDb(), getJudge(), { maxJobs: 5, budgetMs: 20_000 });
+      // Judged submissions enqueue integrity analysis; run a little of it while we're here.
+      await drainAnalysisJobs(getDb(), { maxJobs: 3, budgetMs: 10_000 });
     } catch (err) {
       console.error("judge drain failed", err);
     }
