@@ -16,6 +16,7 @@ import {
 } from "@/lib/server/services/contests";
 import { addExample, addTest, createProblem, setReferenceSolution } from "@/lib/server/services/problems";
 import type { Principal } from "@/lib/server/services/roles";
+import { ACK } from "../helpers/contest-fixture";
 import { createTestDb } from "../helpers/db";
 import { HOUR, contestInput, principal, problemInput } from "../helpers/fixtures";
 
@@ -160,13 +161,13 @@ describe("contestant visibility", () => {
 
   it("registration is idempotent and closes when the contest ends", async () => {
     const { id, slug } = await publishedContest(setter);
-    await registerForContest(db, contestant, id, { now: T0 });
-    await registerForContest(db, contestant, id, { now: at(2) });
+    await registerForContest(db, contestant, id, ACK, { now: T0 });
+    await registerForContest(db, contestant, id, ACK, { now: at(2) });
     expect(await getContestForViewer(db, contestant, slug, { now: at(2) })).toMatchObject({ isRegistered: true, canRegister: false });
     expect((await getContestForManagement(db, setter, id, { now: at(2) })).participants).toBe(1);
 
-    await expect(registerForContest(db, reviewer, id, { now: at(3) })).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(registerForContest(db, reviewer, id, ACK, { now: at(3) })).rejects.toMatchObject({ code: "CONFLICT" });
     const { id: draft } = await createContest(db, setter, contestInput(at(1), at(2)));
-    await expect(registerForContest(db, contestant, draft, { now: T0 })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(registerForContest(db, contestant, draft, ACK, { now: T0 })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

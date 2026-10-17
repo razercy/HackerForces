@@ -2,7 +2,11 @@ import type { Db } from "@/lib/server/db";
 import { attachProblem, createContest, getContestForManagement, publishContest, registerForContest } from "@/lib/server/services/contests";
 import { addExample, addTest, createProblem, setReferenceSolution } from "@/lib/server/services/problems";
 import type { Principal } from "@/lib/server/services/roles";
+import { TELEMETRY_NOTICE_VERSION } from "@/lib/telemetry/notice";
 import { HOUR, contestInput, problemInput } from "./fixtures";
+
+/** Acceptance of the current activity-recording notice, as sent by the registration form. */
+export const ACK = { noticeVersion: TELEMETRY_NOTICE_VERSION };
 
 export const T0 = new Date("2030-01-01T10:00:00Z");
 /** Hours after T0. The fixture contest runs from at(1) to at(3). */
@@ -26,7 +30,7 @@ export async function runningContest(db: Db, setter: Principal, contestants: Pri
     problemIds.push(pid);
   }
   await publishContest(db, setter, id, { now: T0 });
-  for (const c of contestants) await registerForContest(db, c, id, { now: T0 });
+  for (const c of contestants) await registerForContest(db, c, id, ACK, { now: T0 });
   const { slug } = await getContestForManagement(db, setter, id, { now: T0 });
   return { id, slug, problemIds };
 }

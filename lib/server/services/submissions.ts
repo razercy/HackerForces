@@ -4,11 +4,12 @@ import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { hasPermission } from "@/lib/auth/roles";
 import { contestPhase } from "@/lib/contest-phase";
 import type { Db } from "@/lib/server/db";
-import { contest, contestParticipant, contestProblem, judgeJob, problem, submission, user } from "@/lib/server/db/schema";
+import { contest, contestParticipant, contestProblem, ideSession, judgeJob, problem, submission, user } from "@/lib/server/db/schema";
 import { AppError, notFound } from "@/lib/server/errors";
 import { isUuid } from "@/lib/validation/ids";
 import { submissionInputSchema } from "@/lib/validation/submissions";
 import type { Verdict } from "@/lib/submissions";
+import { hasCurrentAcknowledgement } from "./acknowledgements";
 import { canManageContest } from "./policy";
 import type { Principal } from "./roles";
 
@@ -46,12 +47,27 @@ export async function createSubmission(db: Db, viewer: Principal, contestSlug: s
       .where(and(eq(contestParticipant.contestId, c.id), eq(contestParticipant.userId, viewer.userId)))
       .for("update");
     if (!participant) throw new AppError("FORBIDDEN", "Register for the contest before submitting", 403);
+    if (!(await hasCurrentAcknowledgement(tx, viewer.userId, c.id))) {
+      throw new AppError("FORBIDDEN", "Accept the activity-recording notice for this contest first", 403);
+    }
 
     const [p] = await tx
       .select({ id: contestProblem.problemId })
       .from(contestProblem)
       .where(and(eq(contestProblem.contestId, c.id), eq(contestProblem.label, input.label)));
     if (!p) throw notFound("Problem");
+
+    // A submission may come without an editor session (e.g. a direct API call); that is
+    // recorded as missing telemetry, not blocked. A session that is supplied must match.
+    if (input.ideSessionId) {
+      const [sess] = await tx
+        .select({ userId: ideSession.userId, contestId: ideSession.contestId, problemId: ideSession.problemId })
+        .from(ideSession)
+        .where(eq(ideSession.id, input.ideSessionId));
+      if (!sess || sess.userId !== viewer.userId || sess.contestId !== c.id || sess.problemId !== p.id) {
+        throw new AppError("INVALID_INPUT", "Editor session does not match this submission", 400);
+      }
+    }
 
     const recent = await tx
       .select({ createdAt: submission.createdAt, status: submission.status })
@@ -75,6 +91,8 @@ export async function createSubmission(db: Db, viewer: Principal, contestSlug: s
         source: input.source,
         sourceSha256: sha256Hex(input.source),
         createdAt: now,
+        ideSessionId: input.ideSessionId ?? null,
+        ideSeq: input.ideSessionId ? (input.ideSeq ?? null) : null,
       })
       .returning({ id: submission.id });
     await tx.insert(judgeJob).values({ submissionId: row!.id, availableAt: now });

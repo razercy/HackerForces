@@ -22,7 +22,7 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
   const viewer = await getCurrentUser();
   const { contest, problem, examples } = await loadOr404(getContestProblemForViewer(getDb(), viewer, slug, label));
   const mine = viewer ? await listOwnSubmissions(getDb(), viewer, contest.slug, { label: problem.label, limit: 20 }) : [];
-  const canSubmit = !!viewer && contest.isRegistered && contest.phase === "running";
+  const canSubmit = !!viewer && contest.isRegistered && !contest.needsAcknowledgement && contest.phase === "running";
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
@@ -79,7 +79,7 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
       <section className="flex flex-col gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
         <h2 className="text-lg font-semibold">Solve</h2>
         {canSubmit ? (
-          <Workspace contestSlug={contest.slug} label={problem.label} />
+          <Workspace contestSlug={contest.slug} label={problem.label} noticeHref={`/contests/${contest.slug}#activity-notice`} />
         ) : (
           <p className="rounded-md border border-dashed border-zinc-300 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
             {!viewer ? (
@@ -91,6 +91,13 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
               </>
             ) : contest.phase === "ended" ? (
               "The contest has ended. Submissions are closed."
+            ) : contest.needsAcknowledgement ? (
+              <>
+                <Link href={`/contests/${contest.slug}#activity-notice`} className="underline">
+                  Accept the activity-recording notice
+                </Link>{" "}
+                to use the editor.
+              </>
             ) : (
               <>
                 <Link href={`/contests/${contest.slug}`} className="underline">

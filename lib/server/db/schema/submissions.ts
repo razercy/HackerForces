@@ -3,6 +3,7 @@ import { check, index, integer, pgEnum, pgTable, text, timestamp, uuid } from "d
 import { MAX_SOURCE_BYTES, SUBMISSION_KINDS, SUBMISSION_STATUSES, VERDICTS } from "@/lib/submissions";
 import { user } from "./auth";
 import { contest, language, problem } from "./contests";
+import { ideSession } from "./telemetry";
 
 export const submissionKind = pgEnum("submission_kind", SUBMISSION_KINDS);
 export const submissionStatus = pgEnum("submission_status", SUBMISSION_STATUSES);
@@ -33,6 +34,10 @@ export const submission = pgTable(
     source: text("source").notNull(),
     sourceSha256: text("source_sha256").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Editor session the submission came from (null = submitted outside the instrumented editor). */
+    ideSessionId: uuid("ide_session_id").references(() => ideSession.id, { onDelete: "restrict" }),
+    /** Client sequence number of the `submit` event in that session. */
+    ideSeq: integer("ide_seq"),
 
     // ---- judging results (mutable)
     status: submissionStatus("status").notNull().default("queued"),

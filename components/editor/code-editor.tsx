@@ -3,7 +3,7 @@
 import { cpp } from "@codemirror/lang-cpp";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { EditorView, keymap, type KeyBinding } from "@codemirror/view";
+import { EditorView, keymap, type KeyBinding, type ViewUpdate } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { basicSetup } from "codemirror";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
@@ -14,9 +14,10 @@ type Props = {
   /** Read once on mount; the editor owns its document afterwards. */
   initialValue: () => string;
   onChange?: (value: string) => void;
+  /** Every view update (transactions with userEvent annotations, focus changes). Used for telemetry. */
+  onUpdate?: (update: ViewUpdate) => void;
   /** Extra shortcuts (e.g. run / submit). Take precedence over defaults. */
   keyBindings?: KeyBinding[];
-  /** Hook for later instrumentation: every transaction, with its user-event annotations. */
   extensions?: Extension[];
   ariaLabel: string;
 };
@@ -32,16 +33,18 @@ const baseTheme = EditorView.theme({
  * React and gives later telemetry direct access to editor transactions.
  */
 export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEditor(
-  { initialValue, onChange, keyBindings = [], extensions = [], ariaLabel },
+  { initialValue, onChange, onUpdate, keyBindings = [], extensions = [], ariaLabel },
   ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   // Latest callbacks without recreating the editor.
   const onChangeRef = useRef(onChange);
+  const onUpdateRef = useRef(onUpdate);
   const keysRef = useRef(keyBindings);
   useEffect(() => {
     onChangeRef.current = onChange;
+    onUpdateRef.current = onUpdate;
     keysRef.current = keyBindings;
   });
 
@@ -77,6 +80,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, Props>(function CodeEdito
           theme.of(dark.matches ? oneDark : []),
           EditorView.contentAttributes.of({ "aria-label": ariaLabel }),
           EditorView.updateListener.of((u) => {
+            onUpdateRef.current?.(u);
             if (u.docChanged) onChangeRef.current?.(u.state.doc.toString());
           }),
           ...extensions,

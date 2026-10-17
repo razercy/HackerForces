@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { Markdown } from "@/components/markdown";
 import { PhaseBadge } from "@/components/phase-badge";
-import { RegisterButton } from "@/components/register-button";
+import { NoticeAcceptForm } from "@/components/notice-accept-form";
+import { TelemetryNotice } from "@/components/telemetry-notice";
 import { LocalTime } from "@/components/time";
 import { getCurrentUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { getContestForViewer } from "@/lib/server/services/contests";
-import { registerAction } from "../actions";
+import { acknowledgeNoticeAction, registerAction } from "../actions";
 
 export default async function ContestPage({ params }: PageProps<"/contests/[slug]">) {
   const { slug } = await params;
@@ -41,11 +42,18 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
 
       {c.description && <Markdown>{c.description}</Markdown>}
 
-      <section>
-        {c.isRegistered ? (
+      <section className="flex flex-col gap-3">
+        {c.isRegistered && !c.needsAcknowledgement ? (
           <p className="text-sm text-green-700 dark:text-green-400">You are registered for this contest.</p>
+        ) : c.needsAcknowledgement ? (
+          <>
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              You are registered, but the activity-recording notice has changed (or you registered before it existed). Accept it to use the editor and submit.
+            </p>
+            <NoticeAcceptForm action={acknowledgeNoticeAction.bind(null, c.id)} submitLabel="Accept notice" />
+          </>
         ) : c.canRegister ? (
-          <RegisterButton action={registerAction.bind(null, c.id)} />
+          <NoticeAcceptForm action={registerAction.bind(null, c.id)} submitLabel="Register" />
         ) : !viewer && c.phase !== "ended" ? (
           <p className="text-sm">
             <Link href="/sign-in" className="underline">
@@ -73,6 +81,7 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
           </ul>
         )}
       </section>
+      <TelemetryNotice />
     </main>
   );
 }

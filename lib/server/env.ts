@@ -11,6 +11,8 @@ const envSchema = z.object({
   MOCK_JUDGE_DELAY_MS: z.coerce.number().int().min(0).max(10_000).default(1_500),
   /** Shared secret for the judge-drain cron endpoint. Optional locally. */
   CRON_SECRET: z.string().min(16).optional(),
+  /** Days to keep raw editor telemetry and periodic snapshots. */
+  TELEMETRY_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(180),
 });
 
 export type ServerEnv = z.infer<typeof envSchema>;

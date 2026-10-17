@@ -36,6 +36,20 @@
       "when": 1792219840147,
       "tag": "0004_submission_immutable",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792224459085,
+      "tag": "0005_telemetry",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792224460565,
+      "tag": "0006_submission_guard_ide",
+      "breakpoints": true
     }
   ]
 }

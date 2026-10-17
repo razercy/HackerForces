@@ -115,6 +115,57 @@ GET /api/cron/judge        (Vercel Cron, Bearer CRON_SECRET) → drainJobs()   �
 - **Vercel note.** Hobby-plan cron runs daily, so the cron is only a backstop.
   Normal latency comes from `after()` plus poll-triggered recovery.
 
+## Editor telemetry
+
+**Consent.** `lib/telemetry/notice.ts` holds a versioned, plain-language notice
+listing what is recorded, what is not, how it is used, who sees it and how long
+it is kept. Registering requires ticking the box. The server checks both the tick
+and the notice version, then writes an append-only `telemetry_acknowledgement`
+row (user, contest, version, time). If the notice version changes, existing
+participants must accept again before the editor opens or a submission is
+accepted. While the editor is mounted, a recording indicator is always visible.
+
+**What the client records** (`lib/telemetry/recorder.ts`, schema v1 in `lib/telemetry/events.ts`):
+
+| Event | Contents |
+| --- | --- |
+| `edit` | One per CodeMirror transaction: origin from the `userEvent` annotation (`input.type`, `input.paste`, `input.drop`, `input.complete`, `delete`, `undo`, `redo`, …), number of ranges, first position, inserted/deleted character counts, inserted lines, document length. **Never the text itself.** |
+| `snapshot` | Full editor contents: initially, every 30 s or 50 edits while changing, before each run or submit, and on unload. Stored in `code_snapshot`; the event keeps only `{reason, sha256, bytes}`. |
+| `focus` / `blur` / `visibility` | Editor focus and the page's own visibility state. |
+| `heartbeat` | Every 30 s while visible. Lets reviewers tell "idle" apart from "telemetry missing". |
+| `run` / `submit` | Markers. The submission row stores `ide_session_id` and the marker's `seq`. |
+
+The recorder does not read the clipboard (pasted text enters the record only
+because it lands in the editor and then appears in snapshots), and it observes
+nothing outside the editor. Client data can be forged, so it is treated as
+evidence, never as proof.
+
+**Delivery.** Events get strictly increasing `seq` values per session. They are
+batched every 5 s or 100 events (≤ 56 KB), mirrored to a localStorage outbox,
+flushed with `fetch` keepalive when the page is hidden or closed, and retried
+with exponential backoff. Outboxes left behind by closed tabs are re-sent on the
+next page load.
+
+**Ingestion** (`lib/server/telemetry/ingest.ts`) is idempotent. `(session_id,
+seq)` is the primary key and inserts use `ON CONFLICT DO NOTHING`, so retried,
+duplicated and out-of-order batches are all safe. The session row is locked to
+assign an `arrival` number, which keeps reordering visible. Each batch is
+limited to 200 events and 100 KB, each session to 50 000 events, and late
+flushes are accepted for up to 15 minutes after the contest ends. Writing to
+another user's session returns 404.
+
+**Data quality** (`lib/telemetry/quality.ts`) produces warnings that travel with
+the timeline: missing sequence ranges, out-of-order delivery, gaps while the page
+was visible, client clock skew, missing pre-submit snapshots, and submitted code
+that differs from the pre-submit snapshot. A missing or broken session is
+reported as missing data; it is never treated as suspicious in itself.
+
+**Access and retention.** Only `integrity:review` (reviewers and admins) can read
+timelines. Problem setters and contestants cannot. `/api/cron/retention` deletes
+raw events and snapshots after `TELEMETRY_RETENTION_DAYS` (default 180) and keeps
+session rows marked `purged_at`. Submissions are contest records and are not
+affected.
+
 ## Testing
 
 - `tests/unit`: pure logic, such as the permission matrix.

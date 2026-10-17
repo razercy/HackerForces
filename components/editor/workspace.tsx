@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LANGUAGE_LABELS } from "@/lib/languages";
 import { isTerminal, type SubmissionKind, type SubmissionStatus, type Verdict } from "@/lib/submissions";
 import { VerdictBadge } from "@/components/verdict-badge";
+import type { ViewUpdate } from "@codemirror/view";
+import { TelemetryRecorder, type RecorderStatus } from "@/lib/telemetry/recorder";
 import { CodeEditor, type CodeEditorHandle } from "./code-editor";
 
 const TEMPLATE = `#include <bits/stdc++.h>
@@ -51,10 +53,15 @@ function writeDraft(key: string, value: string) {
 const POLL_MS = [500, 1000, 1000, 2000];
 const POLL_GIVE_UP_MS = 3 * 60_000;
 
-export function Workspace({ contestSlug, label }: { contestSlug: string; label: string }) {
+export function Workspace({ contestSlug, label, noticeHref }: { contestSlug: string; label: string; noticeHref: string }) {
   const router = useRouter();
   const editor = useRef<CodeEditorHandle>(null);
   const key = draftKey(contestSlug, label);
+  const recorder = useRef<TelemetryRecorder | null>(null);
+  const [recording, setRecording] = useState<RecorderStatus>({ state: "starting", pending: 0 });
+  // Forwards editor updates to whichever recorder the current effect owns.
+  const onEditorUpdate = useCallback((u: ViewUpdate) => recorder.current?.handleUpdate(u), []);
+  const restoredDraft = useRef(false);
   const [busy, setBusy] = useState<SubmissionKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -62,6 +69,17 @@ export function Workspace({ contestSlug, label }: { contestSlug: string; label: 
   const pollAbort = useRef<AbortController | null>(null);
 
   useEffect(() => () => pollAbort.current?.abort(), []);
+
+  // One recorder per mount (Strict Mode's extra dev mount just opens and abandons a session).
+  useEffect(() => {
+    const r = new TelemetryRecorder({ contestSlug, label, onStatus: setRecording });
+    recorder.current = r;
+    void r.start(editor.current?.getValue() ?? "", restoredDraft.current);
+    return () => {
+      recorder.current = null;
+      r.dispose();
+    };
+  }, [contestSlug, label]);
 
   const onChange = useCallback(
     (value: string) => {
@@ -103,10 +121,12 @@ export function Workspace({ contestSlug, label }: { contestSlug: string; label: 
     setError(null);
     pollAbort.current?.abort();
     try {
+      // Snapshot + marker first, so reviewers can line up editor contents with the submitted code.
+      const link = (await recorder.current?.beforeSubmit(kind === "sample_run" ? "run" : "submit", source)) ?? null;
       const res = await fetch(`/api/contests/${encodeURIComponent(contestSlug)}/submissions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, language: "cpp17", kind, source }),
+        body: JSON.stringify({ label, language: "cpp17", kind, source, ...(link ?? {}) }),
       });
       const body = (await res.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
       if (!res.ok || !body.id) {
@@ -131,7 +151,10 @@ export function Workspace({ contestSlug, label }: { contestSlug: string; label: 
   return (
     <section aria-label="Code editor" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="text-zinc-600 dark:text-zinc-400">{LANGUAGE_LABELS.cpp17}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-zinc-600 dark:text-zinc-400">{LANGUAGE_LABELS.cpp17}</span>
+          <RecordingIndicator status={recording} noticeHref={noticeHref} />
+        </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -155,7 +178,18 @@ export function Workspace({ contestSlug, label }: { contestSlug: string; label: 
       </div>
 
       <div className="h-[28rem]">
-        <CodeEditor ref={editor} ariaLabel={`Solution for problem ${label}`} initialValue={() => readDraft(key) ?? TEMPLATE} onChange={onChange} keyBindings={keyBindings} />
+        <CodeEditor
+          ref={editor}
+          ariaLabel={`Solution for problem ${label}`}
+          initialValue={() => {
+            const draft = readDraft(key);
+            restoredDraft.current = draft != null;
+            return draft ?? TEMPLATE;
+          }}
+          onChange={onChange}
+          keyBindings={keyBindings}
+          onUpdate={onEditorUpdate}
+        />
       </div>
       <p className="text-xs text-zinc-500">
         Drafts are kept in this browser only. &ldquo;Run examples&rdquo; checks the public examples and does not count; &ldquo;Submit&rdquo; is judged on hidden tests and
@@ -183,5 +217,29 @@ export function Workspace({ contestSlug, label }: { contestSlug: string; label: 
         </div>
       )}
     </section>
+  );
+}
+
+const INDICATOR: Record<RecorderStatus["state"], { dot: string; text: string }> = {
+  starting: { dot: "bg-zinc-400", text: "Starting activity recording…" },
+  recording: { dot: "bg-red-500", text: "Activity in this editor is recorded" },
+  offline: { dot: "bg-amber-500", text: "Activity is recorded — saved locally, will sync" },
+  stopped: { dot: "bg-zinc-400", text: "Activity recording unavailable" },
+};
+
+/** Always visible while the editor is mounted, so recording is never silent. */
+function RecordingIndicator({ status, noticeHref }: { status: RecorderStatus; noticeHref: string }) {
+  const v = INDICATOR[status.state];
+  return (
+    <span role="status" className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-2.5 py-0.5 text-xs dark:border-zinc-700">
+      <span aria-hidden className={`h-2 w-2 rounded-full ${v.dot} ${status.state === "recording" ? "animate-pulse" : ""}`} />
+      <span>
+        {v.text}
+        {status.message && status.state !== "recording" ? ` (${status.message})` : ""}
+      </span>
+      <a href={noticeHref} className="underline">
+        What is recorded?
+      </a>
+    </span>
   );
 }

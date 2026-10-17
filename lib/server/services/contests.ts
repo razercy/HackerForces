@@ -17,6 +17,7 @@ import {
 import { AppError, forbidden, notFound } from "@/lib/server/errors";
 import { attachProblemSchema, contestInputSchema } from "@/lib/validation/contests";
 import { isUuid } from "@/lib/validation/ids";
+import { assertCurrentNoticeVersion, hasCurrentAcknowledgement, recordAcknowledgement } from "./acknowledgements";
 import { canManageContest, canManageProblem } from "./policy";
 import type { Principal } from "./roles";
 
@@ -219,7 +220,7 @@ export async function getContestForViewer(db: Db, viewer: Principal | null, slug
 
   const phase = contestPhase(row, now);
   const problemsVisible = isManager || phase === "running" || phase === "ended";
-  const [problems, registration] = await Promise.all([
+  const [problems, registration, acknowledged] = await Promise.all([
     problemsVisible ? contestProblems(db, row.id) : Promise.resolve([]),
     viewer
       ? db
@@ -227,6 +228,7 @@ export async function getContestForViewer(db: Db, viewer: Principal | null, slug
           .from(contestParticipant)
           .where(and(eq(contestParticipant.contestId, row.id), eq(contestParticipant.userId, viewer.userId)))
       : Promise.resolve([]),
+    viewer ? hasCurrentAcknowledgement(db, viewer.userId, row.id) : Promise.resolve(false),
   ]);
   return {
     id: row.id,
@@ -240,6 +242,8 @@ export async function getContestForViewer(db: Db, viewer: Principal | null, slug
     problemsVisible,
     problems: problems.map(({ label, title, difficulty }) => ({ label, title, difficulty })),
     isRegistered: registration.length > 0,
+    /** Registered but has not accepted the current notice version. */
+    needsAcknowledgement: registration.length > 0 && !acknowledged,
     canRegister: !!viewer && row.status === "published" && now < row.endsAt && registration.length === 0,
   };
 }
@@ -276,13 +280,43 @@ export async function getContestProblemForViewer(
     .from(problemExample)
     .where(eq(problemExample.problemId, row.id))
     .orderBy(asc(problemExample.ordinal));
-  return { contest: { slug: c.slug, title: c.title, phase: c.phase, isRegistered: c.isRegistered }, problem: row, examples };
+  return {
+    contest: { id: c.id, slug: c.slug, title: c.title, phase: c.phase, isRegistered: c.isRegistered, needsAcknowledgement: c.needsAcknowledgement },
+    problem: row,
+    examples,
+  };
 }
 
-export async function registerForContest(db: Db, viewer: Principal, contestId: string, { now = new Date() }: Clock = {}) {
+/**
+ * Registration requires accepting the current activity-recording notice; the
+ * acceptance (version + time) is stored in the same transaction.
+ */
+export async function registerForContest(
+  db: Db,
+  viewer: Principal,
+  contestId: string,
+  input: { noticeVersion: unknown },
+  { now = new Date() }: Clock = {},
+) {
+  assertCurrentNoticeVersion(input.noticeVersion);
   if (!isUuid(contestId)) throw notFound("Contest");
-  const [row] = await db.select().from(contest).where(eq(contest.id, contestId));
-  if (!row || row.status !== "published") throw notFound("Contest");
-  if (now >= row.endsAt) throw conflict("Registration has closed");
-  await db.insert(contestParticipant).values({ contestId, userId: viewer.userId }).onConflictDoNothing();
+  await db.transaction(async (tx) => {
+    const [row] = await tx.select().from(contest).where(eq(contest.id, contestId));
+    if (!row || row.status !== "published") throw notFound("Contest");
+    if (now >= row.endsAt) throw conflict("Registration has closed");
+    await recordAcknowledgement(tx, viewer.userId, contestId, now);
+    await tx.insert(contestParticipant).values({ contestId, userId: viewer.userId, registeredAt: now }).onConflictDoNothing();
+  });
+}
+
+/** For participants who registered under an older notice version (or before notices existed). */
+export async function acknowledgeNotice(db: Db, viewer: Principal, contestId: string, input: { noticeVersion: unknown }, { now = new Date() }: Clock = {}) {
+  assertCurrentNoticeVersion(input.noticeVersion);
+  if (!isUuid(contestId)) throw notFound("Contest");
+  const [p] = await db
+    .select({ userId: contestParticipant.userId })
+    .from(contestParticipant)
+    .where(and(eq(contestParticipant.contestId, contestId), eq(contestParticipant.userId, viewer.userId)));
+  if (!p) throw notFound("Contest");
+  await recordAcknowledgement(db, viewer.userId, contestId, now);
 }
