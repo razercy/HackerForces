@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SignOutButton } from "@/components/sign-out-button";
 import { getCurrentUser } from "@/lib/server/authz";
 
 export default async function Home() {
@@ -21,7 +20,9 @@ export default async function Home() {
           </p>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Roles: {user.roles.join(", ")}</p>
           <div>
-            <SignOutButton />
+            <Link href="/contests" className="text-sm underline">
+              Browse contests
+            </Link>
           </div>
         </section>
       ) : (

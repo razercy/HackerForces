@@ -38,6 +38,11 @@ Requires Node.js 22 or later.
    ```bash
    npm run grant-role -- you@example.com admin
    ```
+7. Optionally, seed demo data. First set `SEED_DEMO_PASSWORD` in `.env.local`, then run:
+   ```bash
+   npm run seed
+   ```
+   This creates `setter@demo.test`, `reviewer@demo.test` and `contestant@demo.test`, plus a published "Demo Round" contest that starts one minute after seeding. Running it again is safe.
 
 ## Checks
 
