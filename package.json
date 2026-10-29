@@ -20,7 +20,9 @@
     "eval:generate": "tsx eval/generate.ts",
     "eval:run": "node scripts/eval-run.mjs",
     "eval": "npm run eval:generate && npm run eval:run",
-    "eval:test": "node scripts/eval-test.mjs"
+    "eval:test": "node scripts/eval-test.mjs",
+    "judge:check": "tsx --conditions=react-server scripts/judge-check.ts",
+    "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",

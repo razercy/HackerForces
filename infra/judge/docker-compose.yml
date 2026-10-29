@@ -1,0 +1,76 @@
+# Isolated Judge0 CE for HackerForces. Run on a DEDICATED VM that holds no
+# application secrets or data. See docs/judge.md for the threat model and
+# the full provisioning checklist. Versions are pinned on purpose.
+#
+#   cp judge0.conf.example judge0.conf   # then fill in the secrets
+#   JUDGE_DOMAIN=judge.example.com docker compose up -d
+#
+# Networks:
+#   edge     – Caddy <-> Judge0 API only.
+#   backend  – internal: true (no route to the internet) for server, workers, db, redis.
+
+name: hackerforces-judge
+
+services:
+  caddy:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      JUDGE_DOMAIN: ${JUDGE_DOMAIN:?set JUDGE_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks: [edge]
+    depends_on: [server]
+
+  server:
+    image: judge0/judge0:1.13.1
+    restart: unless-stopped
+    # Judge0's isolate sandbox needs privileged mode. This is the main reason
+    # the judge must live on its own VM: a sandbox escape would land in a host
+    # that has nothing worth stealing except the hidden tests in flight.
+    privileged: true
+    env_file: judge0.conf
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    networks: [edge, backend]
+    depends_on: [db, redis]
+    # No published ports: only Caddy (same edge network) can reach :2358.
+
+  workers:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    restart: unless-stopped
+    privileged: true
+    env_file: judge0.conf
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    networks: [backend]
+    depends_on: [db, redis]
+
+  db:
+    image: postgres:16.4
+    restart: unless-stopped
+    env_file: judge0.conf
+    volumes:
+      - judge-db:/var/lib/postgresql/data
+    networks: [backend]
+
+  redis:
+    image: redis:7.4.0
+    restart: unless-stopped
+    command: ["bash", "-c", 'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"']
+    env_file: judge0.conf
+    networks: [backend]
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+
+volumes:
+  caddy-data: {}
+  judge-db: {}

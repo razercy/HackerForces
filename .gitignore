@@ -51,3 +51,6 @@ next-env.d.ts
 /ml/data/
 /ml/results/
 __pycache__/
+
+# Judge VM secrets
+/infra/judge/judge0.conf

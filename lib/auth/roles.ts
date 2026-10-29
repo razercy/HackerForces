@@ -16,6 +16,7 @@ export const PERMISSIONS = [
   "integrity:confirm", // second-person confirmation of violation decisions (admins)
   "role:manage",
   "audit:read",
+  "ops:manage", // queue health, requeueing dead jobs
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 

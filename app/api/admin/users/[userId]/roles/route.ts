@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { requirePermission } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { errorResponse } from "@/lib/server/http";
+import { assertSameOrigin } from "@/lib/server/origin";
 import { getRoles, grantRole, revokeRole } from "@/lib/server/services/roles";
 import { roleChangeSchema } from "@/lib/validation/roles";
 
@@ -21,6 +22,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function POST(req: NextRequest, ctx: Ctx) {
   try {
+    assertSameOrigin(req);
     const actor = await requirePermission("role:manage");
     const { userId } = await ctx.params;
     const { role } = roleChangeSchema.parse(await req.json());
@@ -33,6 +35,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(req: NextRequest, ctx: Ctx) {
   try {
+    assertSameOrigin(req);
     const actor = await requirePermission("role:manage");
     const { userId } = await ctx.params;
     const { role } = roleChangeSchema.parse(await req.json());

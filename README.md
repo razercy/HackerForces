@@ -85,8 +85,4 @@ All of the evaluation data is **synthetic**. See [docs/evaluation.md](docs/evalu
 
 ## Deploying to Vercel
 
-1. Import the repository into Vercel. Use the Next.js framework preset with default build settings.
-2. Add the Neon integration from the Vercel Marketplace, or set `DATABASE_URL` manually using the pooled string from your production branch.
-3. Set `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL` (`https://<your-domain>`) for Production. Use separate values for Preview.
-4. Run `npm run db:migrate` against the production branch before or as part of each release.
-5. Check that `GET /api/health` returns `{"status":"ok"}`.
+See [docs/deployment.md](docs/deployment.md) for environment variables, migrations, crons and the post-deploy smoke test. See [docs/judge.md](docs/judge.md) for setting up the isolated Judge0 VM and its threat model. The app stays on the safe mock judge until a judge VM has been provisioned and verified.

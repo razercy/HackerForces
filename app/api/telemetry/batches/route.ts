@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { invalidInput } from "@/lib/server/errors";
 import { errorResponse } from "@/lib/server/http";
+import { assertSameOrigin } from "@/lib/server/origin";
 import { ingestBatch } from "@/lib/server/telemetry/ingest";
 import { MAX_BATCH_BYTES } from "@/lib/telemetry/events";
 
@@ -10,6 +11,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    assertSameOrigin(req);
     const user = await requireUser();
     const text = await req.text();
     if (Buffer.byteLength(text, "utf8") > MAX_BATCH_BYTES) throw invalidInput("Batch too large");

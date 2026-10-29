@@ -1,7 +1,7 @@
 // Tables required by Better Auth (core schema, default model/field names).
 // Column names are snake_case in Postgres; property names match what the
 // Better Auth Drizzle adapter expects.
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -68,3 +68,15 @@ export const verification = pgTable(
   },
   (t) => [index("verification_identifier_idx").on(t.identifier)],
 );
+
+/**
+ * Better Auth rate-limit counters. Stored in Postgres (not in memory) because
+ * serverless instances do not share memory: an in-memory limiter would reset
+ * on every cold start and be per-instance.
+ */
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});

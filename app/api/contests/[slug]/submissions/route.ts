@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { invalidInput } from "@/lib/server/errors";
 import { errorResponse } from "@/lib/server/http";
+import { assertSameOrigin } from "@/lib/server/origin";
 import { scheduleDrain } from "@/lib/server/judge/schedule";
 import { createSubmission } from "@/lib/server/services/submissions";
 
@@ -14,6 +15,7 @@ const MAX_BODY_BYTES = 80 * 1024;
 
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/contests/[slug]/submissions">) {
   try {
+    assertSameOrigin(req);
     const user = await requireUser();
     const { slug } = await ctx.params;
     const body = await req.text();

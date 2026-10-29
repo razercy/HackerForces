@@ -166,6 +166,25 @@ raw events and snapshots after `TELEMETRY_RETENTION_DAYS` (default 180) and keep
 session rows marked `purged_at`. Submissions are contest records and are not
 affected.
 
+## Security controls (summary)
+
+| Concern | Control | Where |
+| --- | --- | --- |
+| Untrusted code | Never executed in the app; mock judge, or Judge0 on an isolated VM | `lib/server/judge/*`, `infra/judge`, [judge.md](judge.md) |
+| XSS | Nonce-based CSP (`script-src 'nonce-…' 'strict-dynamic'`), React escaping, Markdown without raw HTML | `proxy.ts`, `components/markdown.tsx` |
+| Clickjacking | `frame-ancestors 'none'`, `X-Frame-Options: DENY` | `proxy.ts`, `next.config.ts` |
+| CSRF | Same-origin check on JSON mutations; Next.js origin check for Server Actions; Better Auth `trustedOrigins`; `SameSite=Lax` cookies | `lib/server/origin.ts` |
+| Brute force / abuse | DB-backed auth rate limits (shared across instances); submission and telemetry throttles and quotas | `create-auth.ts`, services |
+| Authorization | Server-side permission checks in every service; ownership and separation of duties; reviewer-only telemetry | `lib/auth/roles.ts`, services |
+| Integrity of records | Append-only triggers on audit log, submissions, decisions, acknowledgements, assessments | `drizzle/*.sql` |
+| Secrets | Env validation; HTTPS-only judge URL; nothing secret in client bundles (`server-only`) | `lib/server/env.ts` |
+| Privacy | Versioned consent notice, `Permissions-Policy: clipboard-read=()`, 180-day telemetry retention | `lib/telemetry/notice.ts` |
+
+Known dependency advisory: `npm audit` reports a moderate issue in an old
+esbuild pulled in by **drizzle-kit** (dev-only migration tooling, affecting
+esbuild's dev server). It is not part of the deployed app. The suggested fix
+would downgrade drizzle-kit, so it is tracked rather than forced.
+
 ## Testing
 
 - `tests/unit`: pure logic, such as the permission matrix.

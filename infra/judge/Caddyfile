@@ -1,0 +1,33 @@
+# Public entry point for the judge. TLS is automatic (Let's Encrypt).
+{$JUDGE_DOMAIN} {
+	# Only the endpoints the application uses are reachable from outside.
+	@allowed {
+		path /submissions/batch /about
+	}
+	handle @allowed {
+		reverse_proxy server:2358 {
+			# Judge0's own headers are not forwarded beyond what the app needs.
+			header_down -Server
+		}
+	}
+	handle {
+		respond "Not found" 404
+	}
+
+	request_body {
+		# One batch of 20 submissions with 256 KB inputs plus source, base64 encoded.
+		max_size 8MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+
+	log {
+		# Access log without request bodies (which contain hidden tests).
+		output file /data/access.log
+		format json
+	}
+}

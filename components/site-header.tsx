@@ -8,6 +8,7 @@ export async function SiteHeader() {
   const canManage = !!user && (hasPermission(user.roles, "problem:manage") || hasPermission(user.roles, "contest:manage"));
   const canReview = !!user && hasPermission(user.roles, "integrity:review");
   const canAudit = !!user && hasPermission(user.roles, "audit:read");
+  const canOps = !!user && hasPermission(user.roles, "ops:manage");
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
       <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
@@ -36,6 +37,11 @@ export async function SiteHeader() {
           {canAudit && (
             <Link href="/admin/audit" className="hover:underline">
               Audit
+            </Link>
+          )}
+          {canOps && (
+            <Link href="/admin/ops" className="hover:underline">
+              Ops
             </Link>
           )}
         </nav>

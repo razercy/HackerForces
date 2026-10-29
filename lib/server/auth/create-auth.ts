@@ -13,7 +13,7 @@ export function createAuth({ db, secret, baseURL }: AuthOptions) {
     baseURL,
     database: drizzleAdapter(db, {
       provider: "pg",
-      schema: { user: schema.user, session: schema.session, account: schema.account, verification: schema.verification },
+      schema: { user: schema.user, session: schema.session, account: schema.account, verification: schema.verification, rateLimit: schema.rateLimit },
       transaction: true,
     }),
     emailAndPassword: {
@@ -27,7 +27,18 @@ export function createAuth({ db, secret, baseURL }: AuthOptions) {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24,
     },
-    rateLimit: { enabled: true, window: 60, max: 30 },
+    // Durable, cross-instance limits (memory storage would be per serverless instance).
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 30,
+      customRules: {
+        "/sign-in/email": { window: 60, max: 5 },
+        "/sign-up/email": { window: 3600, max: 10 },
+      },
+    },
+    trustedOrigins: [new URL(baseURL).origin],
     advanced: { useSecureCookies: baseURL.startsWith("https://") },
     // nextCookies must be the last plugin so Server Actions can set cookies.
     plugins: [nextCookies()],
