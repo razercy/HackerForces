@@ -17,8 +17,8 @@ from .metrics import Confusion, average_precision, cluster_bootstrap, confusion,
 BASELINE_THRESHOLD = 50.0
 METHODS = ("baseline_priors", "baseline_cohort", "isolation_forest", "isolation_forest_clean", "logistic_regression")
 METHOD_LABELS = {
-    "baseline_priors": "Baseline v1 (priors)",
-    "baseline_cohort": "Baseline v1 (cohort)",
+    "baseline_priors": "Baseline (priors)",
+    "baseline_cohort": "Baseline (cohort)",
     "isolation_forest": "Isolation Forest (unlabelled training data)",
     "isolation_forest_clean": "Isolation Forest (trained on legitimate only; optimistic)",
     "logistic_regression": "Logistic regression (supervised; optimistic upper bound)",

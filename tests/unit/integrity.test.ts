@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ELEVATED_THRESHOLD, MIN_COHORT, scoreAssessment, explain } from "@/lib/integrity/baseline";
+import { ELEVATED_THRESHOLD, MIN_COHORT, RULESET_VERSION, SIGNALS, scoreAssessment, explain } from "@/lib/integrity/baseline";
 import { EDITOR_STARTER_TEMPLATE } from "@/lib/editor-template";
-import { extractFeatures, pickTarget, type AnalysisInput, type AnalysisTemplate } from "@/lib/integrity/features";
+import { extractFeatures, pickTarget, type AnalysisInput, type AnalysisTemplate, type FeatureName } from "@/lib/integrity/features";
 import { templateCoverage, tokenize } from "@/lib/integrity/similarity";
 import { SOLUTION, TimelineBuilder, sha, submissionFrom } from "../helpers/timeline";
 
@@ -172,6 +172,54 @@ describe("baseline scorer", () => {
     const tinyPaste = { ...tiny, features: { ...tiny.features, adjusted_paste_share: { ...tiny.features.adjusted_paste_share, value: 0.08 } } };
     const r = scoreAssessment(tinyPaste, { adjusted_paste_share: peers(0) });
     expect(r.contributions.find((k) => k.feature === "adjusted_paste_share")!.contribution).toBe(0);
+  });
+
+  describe("cohort floor (baseline-v2)", () => {
+    const peers = (v: number) => Array.from({ length: MIN_COHORT }, (_, i) => v + i * 0.001);
+    // Every signal has a cohort of honest typists who pasted (almost) nothing.
+    const typistCohort = () => {
+      const f = typed().features;
+      return Object.fromEntries(SIGNALS.filter((s) => !s.cohortOnly && f[s.feature].value !== null).map((s) => [s.feature, peers(f[s.feature].value!)]));
+    };
+    const withValues = (x: ReturnType<typeof typed>, values: Partial<Record<FeatureName, number>>) => ({
+      ...x,
+      features: Object.fromEntries(Object.entries(x.features).map(([k, v]) => [k, k in values ? { ...v, value: values[k as FeatureName]! } : v])) as typeof x.features,
+    });
+    const contribution = (a: ReturnType<typeof scoreAssessment>, f: FeatureName) => a.contributions.find((k) => k.feature === f)!;
+
+    it("is recorded as baseline-v2", () => {
+      expect(RULESET_VERSION).toBe("baseline-v2");
+      expect(scoreAssessment(typed()).rulesetVersion).toBe("baseline-v2");
+    });
+
+    it("does not flag a modest unregistered snippet paste in a near-zero-paste cohort", () => {
+      // Just below the priors starts (0.25 and 0.20); baseline-v1 gave these large cohort contributions.
+      const x = withValues(typed(), { adjusted_paste_share: 0.22, largest_unexplained_insert_share: 0.18 });
+      const a = scoreAssessment(x, typistCohort());
+      expect(a.reference.mode).toBe("cohort");
+      expect((contribution(a, "adjusted_paste_share").reference as { z: number }).z).toBeGreaterThan(4); // unusual vs peers: v1 gave ~0.76 here
+      expect(contribution(a, "adjusted_paste_share").contribution).toBe(0);
+      expect(contribution(a, "largest_unexplained_insert_share").contribution).toBe(0);
+      expect(a.band).toBe("typical");
+    });
+
+    it("still flags a whole-solution paste in the same cohort", () => {
+      const x = pastedWhole();
+      const a = scoreAssessment(x, typistCohort());
+      expect(a.reference.mode).toBe("cohort");
+      expect(a.band).toBe("elevated");
+      expect(a.score!).toBeGreaterThanOrEqual(scoreAssessment(x).score!);
+    });
+
+    it("adds sensitivity above the priors start, never below it", () => {
+      const x = withValues(typed(), { adjusted_paste_share: 0.4 });
+      const cohort = contribution(scoreAssessment(x, typistCohort()), "adjusted_paste_share").contribution;
+      const priors = contribution(scoreAssessment(x), "adjusted_paste_share").contribution;
+      expect(priors).toBeGreaterThan(0);
+      expect(cohort).toBeGreaterThan(priors);
+      const atStart = withValues(typed(), { adjusted_paste_share: 0.25 });
+      expect(contribution(scoreAssessment(atStart, typistCohort()), "adjusted_paste_share").contribution).toBe(0);
+    });
   });
 
   it("explains its top contributions in plain language", () => {

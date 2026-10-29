@@ -60,6 +60,7 @@ def to_markdown(ev: dict, manifest: dict) -> str:
     legit = [s for s in labels if labels[s] == 0]
     mis = [s for s in labels if labels[s] == 1]
     bp = R["baseline_priors"]
+    ruleset = manifest["rulesetVersion"]
     L: list[str] = []
     w = L.append
 
@@ -97,7 +98,7 @@ def to_markdown(ev: dict, manifest: dict) -> str:
     w("")
     w("## Methods")
     w("")
-    w(f"- **Baseline v1 (priors / cohort):** the production scorer exactly as it ships (`lib/integrity/baseline.ts`), at "
+    w(f"- **Baseline (priors / cohort):** the production scorer `{ruleset}` exactly as it ships (`lib/integrity/baseline.ts`), at "
       f"its threshold of {BASELINE_THRESHOLD:g}. In cohort mode, the peers for each record are the other records on the "
       "same problem, which mirrors production. That cohort includes simulated misconduct, as it would in reality.")
     w("- **Isolation Forest:** scikit-learn, 300 trees, fitted on the training folds without labels. The *clean* variant "
@@ -159,7 +160,7 @@ def to_markdown(ev: dict, manifest: dict) -> str:
     w("")
     fp_by = sorted(((s, bp.per_scenario[s]) for s in legit), key=lambda kv: -kv[1])
     fn_by = sorted(((s, 1 - bp.per_scenario[s]) for s in mis), key=lambda kv: -kv[1])
-    w("Baseline v1 (priors), as shipped:")
+    w(f"Baseline `{ruleset}` (priors), as shipped:")
     w("")
     flagged_legit = [(s, v) for s, v in fp_by if v > 0]
     missed = [(s, v) for s, v in fn_by if v > 0]
@@ -167,10 +168,19 @@ def to_markdown(ev: dict, manifest: dict) -> str:
     w("- **Simulated misconduct it misses:** " + (", ".join(f"`{s}` {_pct(v)} missed" for s, v in missed) or "none") + ".")
     bc = R["baseline_cohort"]
     worst_cohort = max(legit, key=lambda s: bc.per_scenario[s] - bp.per_scenario[s])
-    w(f"- **Cohort mode changes the trade-off.** On `{worst_cohort}` its false-positive rate is {_pct(bc.per_scenario[worst_cohort])}, "
-      f"against {_pct(bp.per_scenario[worst_cohort])} in priors mode. Most peers paste little, so ordinary small pastes get large robust z-scores, "
-      "and the absolute floor (half the priors start) is too lenient to stop them. It does improve recall on partial pastes. "
-      "**Recommendation:** raise the cohort-mode floor to the full priors start before relying on cohort scores, and re-run this evaluation.")
+    best_cohort = max(mis, key=lambda s: bc.per_scenario[s] - bp.per_scenario[s])
+    gain = (f"It raises recall on `{best_cohort}` from {_pct(bp.per_scenario[best_cohort])} to {_pct(bc.per_scenario[best_cohort])}"
+            if bc.per_scenario[best_cohort] > bp.per_scenario[best_cohort] else "It does not raise recall on any misconduct scenario")
+    if bc.per_scenario[worst_cohort] > bp.per_scenario[worst_cohort]:
+        w(f"- **Cohort mode changes the trade-off.** On `{worst_cohort}` its false-positive rate is {_pct(bc.per_scenario[worst_cohort])}, "
+          f"against {_pct(bp.per_scenario[worst_cohort])} in priors mode: when most peers paste little, ordinary pastes get large robust z-scores "
+          f"that the absolute floor does not stop. {gain}. Weigh both before relying on cohort scores.")
+    else:
+        w(f"- **Cohort mode adds sensitivity without adding false positives here.** No legitimate scenario is flagged more often than in "
+          f"priors mode (overall FPR {_pct(bc.at_op.fpr)} against {_pct(bp.at_op.fpr)}). {gain}, because a value above the priors start that is "
+          "extreme relative to peers counts for more than the priors ramp gives it. The absolute floor is closed up to the priors start, so a small paste in a cohort that "
+          "pastes even less is not flagged. `baseline-v1` opened that floor at half the priors start and flagged most `L_snippets` records "
+          "in cohort mode; this evaluation is what led to raising it. These cohorts are synthetic; real cohorts may be smaller or more varied.")
     w("- **`L_offline_draft` is a designed hard negative.** Code drafted in a local IDE and pasted without being registered "
       "looks exactly like `M_paste_all` in editor telemetry, and neither the baseline nor Isolation Forest separates them. Template registration exists for "
       "this situation, and it is also why a human must review every flag.")
@@ -201,7 +211,7 @@ def to_markdown(ev: dict, manifest: dict) -> str:
       "`input.type` events. Client telemetry is evidence, not proof.")
     w("- **Browser telemetry cannot observe** second devices, other people, or code typed from memory.")
     w("- **The learned methods are not deployed.** Isolation Forest scores are hard to explain to a reviewer, and the supervised model "
-      "needs labelled real cases that do not exist. Baseline v1 stays the production scorer because every point it gives can be "
+      "needs labelled real cases that do not exist. The transparent baseline stays the production scorer because every point it gives can be "
       "explained in a sentence.")
     w("- **Review workload:** at the shipped threshold, about " + _f(bp.at_op.flagged_per_100, 1) + " of every 100 contestant × problem "
       "subjects are flagged for review. In a real contest that is the human cost of the system and must be budgeted.")

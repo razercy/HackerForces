@@ -11,7 +11,7 @@ Regenerate with `npm run eval` (TypeScript generator → Python evaluation). Det
 
 - Dataset `synthetic-v1`, seed 42, 1000 simulated contestants, 4518 contestant × problem records across 6 problems (difficulty 800–2100).
 - Simulated misconduct: 331 records (7.3%). It is clustered in about 10% of contestants, which is why splits are grouped by contestant.
-- Pipeline versions: features `features-v1`, scorer `baseline-v1`.
+- Pipeline versions: features `features-v1`, scorer `baseline-v2`.
 - **Insufficient data:** 126 records (2.8%) received no score (no_session: 126); 12 of them were simulated misconduct. They are excluded below, because the system refuses to score them. Every method is evaluated on the remaining 4392 records.
 - Telemetry was deliberately degraded at random: about 6% of sessions lost a range of events and about 3% of submissions had no editor session.
 
@@ -35,7 +35,7 @@ Regenerate with `npm run eval` (TypeScript generator → Python evaluation). Det
 
 ## Methods
 
-- **Baseline v1 (priors / cohort):** the production scorer exactly as it ships (`lib/integrity/baseline.ts`), at its threshold of 50. In cohort mode, the peers for each record are the other records on the same problem, which mirrors production. That cohort includes simulated misconduct, as it would in reality.
+- **Baseline (priors / cohort):** the production scorer `baseline-v2` exactly as it ships (`lib/integrity/baseline.ts`), at its threshold of 50. In cohort mode, the peers for each record are the other records on the same problem, which mirrors production. That cohort includes simulated misconduct, as it would in reality.
 - **Isolation Forest:** scikit-learn, 300 trees, fitted on the training folds without labels. The *clean* variant is fitted on legitimate rows only. That is optimistic, because real training data is unlabelled.
 - **Logistic regression:** supervised, class-balanced. It sees labels that would not exist in practice, so treat it as an upper bound on what these features can separate, not as a deployable model.
 - **Validation:** 5-fold cross-validation **grouped by contestant**. No contestant appears in both training and test data, and this is asserted in code. The baselines need no training and are scored on every record.
@@ -46,8 +46,8 @@ Regenerate with `npm run eval` (TypeScript generator → Python evaluation). Det
 
 | Method | PR-AUC [95% CI] | Precision | Recall [95% CI] | F1 | FPR [95% CI] | Flagged / 100 | P@25 | P@50 |
 | --- | --- | ---: | --- | ---: | --- | ---: | ---: | ---: |
-| Baseline v1 (priors) | 0.545 [0.481, 0.604] | 67.2% | 63.0% [58.1%, 67.9%] | 0.650 | 2.4% [1.9%, 2.9%] | 6.8 | 68.0% | 34.0% |
-| Baseline v1 (cohort) | 0.547 [0.485, 0.605] | 59.4% | 79.3% [75.1%, 83.1%] | 0.679 | 4.2% [3.6%, 4.9%] | 9.7 | 100.0% | 66.0% |
+| Baseline (priors) | 0.545 [0.481, 0.604] | 67.2% | 63.0% [58.1%, 67.9%] | 0.650 | 2.4% [1.9%, 2.9%] | 6.8 | 68.0% | 34.0% |
+| Baseline (cohort) | 0.536 [0.473, 0.595] | 71.2% | 75.9% [71.6%, 79.7%] | 0.734 | 2.4% [1.9%, 2.9%] | 7.7 | 100.0% | 52.0% |
 | Isolation Forest (unlabelled training data) | 0.599 [0.540, 0.651] | 55.2% | 51.7% [46.9%, 56.7%] | 0.534 | 3.3% [2.8%, 3.9%] | 6.8 | 100.0% | 94.0% |
 | Isolation Forest (trained on legitimate only; optimistic) | 0.495 [0.430, 0.562] | 63.5% | 59.6% [54.3%, 65.0%] | 0.615 | 2.7% [2.2%, 3.2%] | 6.8 | 28.0% | 52.0% |
 | Logistic regression (supervised; optimistic upper bound) | 0.873 [0.835, 0.902] | 86.0% | 80.6% [76.6%, 84.5%] | 0.832 | 1.0% [0.7%, 1.3%] | 6.8 | 100.0% | 100.0% |
@@ -58,7 +58,7 @@ Logistic regression at its natural threshold of p ≥ 0.5: precision 58.2%, reca
 
 For legitimate scenarios this is the false-positive rate. For simulated misconduct it is the recall.
 
-| Scenario | Label | Baseline v1 (priors) | Baseline v1 (cohort) | Isolation Forest (unlabelled training data) | Isolation Forest (trained on legitimate only) | Logistic regression (supervised) |
+| Scenario | Label | Baseline (priors) | Baseline (cohort) | Isolation Forest (unlabelled training data) | Isolation Forest (trained on legitimate only) | Logistic regression (supervised) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | `L_autocomplete` | L | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
 | `L_debug` | L | 0.0% | 0.0% | 2.6% | 0.0% | 0.0% |
@@ -66,12 +66,12 @@ For legitimate scenarios this is the false-positive rate. For simulated miscondu
 | `L_library` | L | 0.0% | 0.0% | 75.6% | 13.4% | 0.0% |
 | `L_offline_draft` | L | 99.0% | 99.0% | 57.6% | 99.0% | 28.3% |
 | `L_reading` | L | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| `L_snippets` | L | 0.0% | 68.2% | 0.0% | 0.0% | 6.4% |
+| `L_snippets` | L | 0.0% | 0.0% | 0.0% | 0.0% | 6.4% |
 | `L_templates` | L | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
 | `L_typed` | L | 0.0% | 0.0% | 0.0% | 0.0% | 0.1% |
 | `M_humanlike` | M | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
 | `M_inject` | M | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| `M_partial` | M | 32.5% | 100.0% | 63.6% | 18.2% | 93.5% |
+| `M_partial` | M | 32.5% | 85.7% | 63.6% | 18.2% | 93.5% |
 | `M_paste_all` | M | 100.0% | 100.0% | 42.2% | 100.0% | 100.0% |
 | `M_paste_edit` | M | 100.0% | 100.0% | 97.7% | 100.0% | 100.0% |
 | `M_robotic` | M | 0.0% | 0.0% | 0.0% | 0.0% | 28.1% |
@@ -80,15 +80,15 @@ For legitimate scenarios this is the false-positive rate. For simulated miscondu
 
 | Threshold | Priors: precision | recall | FPR | flagged/100 | Cohort: precision | recall | FPR | flagged/100 |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 10 | 58.6% | 81.2% | 4.5% | 10.1 | 52.4% | 81.5% | 5.8% | 11.3 |
-| 20 | 64.6% | 79.0% | 3.4% | 8.9 | 59.3% | 79.3% | 4.3% | 9.7 |
-| 30 | 71.1% | 75.5% | 2.4% | 7.7 | 59.4% | 79.3% | 4.2% | 9.7 |
-| 40 | 69.2% | 69.0% | 2.4% | 7.2 | 59.4% | 79.3% | 4.2% | 9.7 |
-| 50 ← | 67.2% | 63.0% | 2.4% | 6.8 | 59.4% | 79.3% | 4.2% | 9.7 |
-| 60 | 65.5% | 58.3% | 2.4% | 6.5 | 59.4% | 79.3% | 4.2% | 9.7 |
-| 70 | 64.0% | 54.5% | 2.4% | 6.2 | 59.4% | 79.3% | 4.2% | 9.7 |
-| 80 | 59.2% | 44.5% | 2.4% | 5.5 | 69.3% | 70.2% | 2.4% | 7.4 |
-| 90 | 100.0% | 3.4% | 0.0% | 0.3 | 100.0% | 7.8% | 0.0% | 0.6 |
+| 10 | 58.6% | 81.2% | 4.5% | 10.1 | 56.5% | 81.5% | 4.9% | 10.5 |
+| 20 | 64.6% | 79.0% | 3.4% | 8.9 | 59.3% | 79.0% | 4.2% | 9.7 |
+| 30 | 71.1% | 75.5% | 2.4% | 7.7 | 59.2% | 78.7% | 4.2% | 9.7 |
+| 40 | 69.2% | 69.0% | 2.4% | 7.2 | 66.8% | 77.7% | 3.0% | 8.4 |
+| 50 ← | 67.2% | 63.0% | 2.4% | 6.8 | 71.2% | 75.9% | 2.4% | 7.7 |
+| 60 | 65.5% | 58.3% | 2.4% | 6.5 | 70.1% | 72.1% | 2.4% | 7.5 |
+| 70 | 64.0% | 54.5% | 2.4% | 6.2 | 67.9% | 64.9% | 2.4% | 6.9 |
+| 80 | 59.2% | 44.5% | 2.4% | 5.5 | 62.5% | 51.1% | 2.4% | 5.9 |
+| 90 | 100.0% | 3.4% | 0.0% | 0.3 | 100.0% | 5.6% | 0.0% | 0.4 |
 
 ### What the supervised model leaned on
 
@@ -109,11 +109,11 @@ These are the largest standardised logistic-regression coefficients, fitted on a
 
 ## Failure cases
 
-Baseline v1 (priors), as shipped:
+Baseline `baseline-v2` (priors), as shipped:
 
 - **Legitimate scenarios it flags:** `L_offline_draft` 99.0%; every other legitimate scenario is at 0%.
 - **Simulated misconduct it misses:** `M_humanlike` 100.0% missed, `M_robotic` 100.0% missed, `M_partial` 67.5% missed.
-- **Cohort mode changes the trade-off.** On `L_snippets` its false-positive rate is 68.2%, against 0.0% in priors mode. Most peers paste little, so ordinary small pastes get large robust z-scores, and the absolute floor (half the priors start) is too lenient to stop them. It does improve recall on partial pastes. **Recommendation:** raise the cohort-mode floor to the full priors start before relying on cohort scores, and re-run this evaluation.
+- **Cohort mode adds sensitivity without adding false positives here.** No legitimate scenario is flagged more often than in priors mode (overall FPR 2.4% against 2.4%). It raises recall on `M_partial` from 32.5% to 85.7%, because a value above the priors start that is extreme relative to peers counts for more than the priors ramp gives it. The absolute floor is closed up to the priors start, so a small paste in a cohort that pastes even less is not flagged. `baseline-v1` opened that floor at half the priors start and flagged most `L_snippets` records in cohort mode; this evaluation is what led to raising it. These cohorts are synthetic; real cohorts may be smaller or more varied.
 - **`L_offline_draft` is a designed hard negative.** Code drafted in a local IDE and pasted without being registered looks exactly like `M_paste_all` in editor telemetry, and neither the baseline nor Isolation Forest separates them. Template registration exists for this situation, and it is also why a human must review every flag.
 - **`M_humanlike` is a designed miss.** Copied code retyped by hand with a natural rhythm produces telemetry identical to honest typing, and nothing browser-based can detect it. Recall on it is near zero for every method, which is the honest result.
 - **`M_robotic` (auto-typed code)** is caught 0.0% of the time by the baseline: keystroke regularity (`iki_cv`) carries only 5% of its weight, so very regular typing alone cannot reach the threshold. Isolation Forest flags 0.0%, so regular timing does not stand out as unusual without labels. Only the supervised model flags some (28.1%). Detecting auto-typers would need a dedicated, validated timing signal, and a real auto-typer can add jitter anyway.
@@ -126,6 +126,6 @@ Baseline v1 (priors), as shipped:
 - **Distribution shift:** thresholds and weights were chosen by reasoning, and this evaluation uses the same assumptions that produced them. Results on a different contest population, problem style or editor version can differ arbitrarily.
 - **Adversarial adaptation:** anyone who knows the features can avoid them by retyping, adding jitter, or emitting forged `input.type` events. Client telemetry is evidence, not proof.
 - **Browser telemetry cannot observe** second devices, other people, or code typed from memory.
-- **The learned methods are not deployed.** Isolation Forest scores are hard to explain to a reviewer, and the supervised model needs labelled real cases that do not exist. Baseline v1 stays the production scorer because every point it gives can be explained in a sentence.
+- **The learned methods are not deployed.** Isolation Forest scores are hard to explain to a reviewer, and the supervised model needs labelled real cases that do not exist. The transparent baseline stays the production scorer because every point it gives can be explained in a sentence.
 - **Review workload:** at the shipped threshold, about 6.8 of every 100 contestant × problem subjects are flagged for review. In a real contest that is the human cost of the system and must be budgeted.
 

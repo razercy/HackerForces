@@ -1,12 +1,16 @@
-// Transparent baseline scorer ("baseline-v1"). Pure and deterministic.
+// Transparent baseline scorer ("baseline-v2"). Pure and deterministic.
 //
 // Each signal maps one feature to a contribution in [0, 1]:
 //  • priors mode (fewer than MIN_COHORT peers): a documented piecewise-linear
 //    ramp between `start` (0) and `full` (1);
 //  • cohort mode: robust z-score against peers on the same problem
-//    (median / MAD), ramping from z = 2 (0) to z = 5 (1), and gated by a
-//    lenient absolute floor so a cohort where nobody pastes cannot make a
-//    small paste look anomalous.
+//    (median / MAD), ramping from z = 2 (0) to z = 5 (1), and gated by an
+//    absolute floor that starts at the priors `start` (0) and opens fully
+//    half-way to `full` (1). A value the priors would not flag is therefore
+//    never flagged because peers happen to paste even less; the cohort can
+//    only add sensitivity above the priors threshold.
+// baseline-v1 opened the floor at half the priors start, which flagged
+// ordinary small pastes in low-paste cohorts (docs/evaluation.md, Phase 6).
 // Score = 100 × Σ wᵢcᵢ / Σ wᵢ over available signals.
 //
 // THE THRESHOLDS AND WEIGHTS ARE UNCALIBRATED STARTING POINTS chosen by
@@ -15,7 +19,7 @@
 
 import type { DataQuality, Extraction, FeatureName, Features } from "./features";
 
-export const RULESET_VERSION = "baseline-v1";
+export const RULESET_VERSION = "baseline-v2";
 export const MIN_COHORT = 10;
 export const ELEVATED_THRESHOLD = 50;
 /** Below this share of total signal weight being available, no score is produced. */
@@ -102,8 +106,8 @@ export function scoreAssessment(extraction: Pick<Extraction, "features" | "dataQ
       const scale = Math.max(1.4826 * mad, s.minScale);
       const z = (sign * (x - med)) / scale;
       const zc = ramp(z, 2, 5);
-      // Lenient absolute floor: half-way to the priors start, in the unusual direction.
-      const floor = s.cohortOnly ? 1 : ramp(x, s.direction === "high" ? s.start / 2 : (s.start + 1) / 2, s.start);
+      // Absolute floor: closed up to the priors start, fully open half-way to `full`.
+      const floor = s.cohortOnly ? 1 : ramp(x, s.start, (s.start + s.full) / 2);
       c = Math.min(zc, floor);
       reference = { median: med, scale: Math.round(scale * 1e4) / 1e4, n: peers.length, z: Math.round(z * 100) / 100 };
       modes.add("cohort");

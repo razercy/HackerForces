@@ -12,7 +12,7 @@ telemetry_event / code_snapshot / submission   (raw, Phase 3)
 extractFeatures  (lib/integrity/features.ts, pure, "features-v1")
         │  → feature_vector   (unique by inputs digest: same inputs ⇒ same row)
         ▼
-scoreAssessment  (lib/integrity/baseline.ts, pure, "baseline-v1")
+scoreAssessment  (lib/integrity/baseline.ts, pure, "baseline-v2")
         │  → anomaly_assessment  (append-only history; skipped if identical)
         ▼
 review queue / detail  (reviewer-only; dashboard in Phase 5)
@@ -72,7 +72,7 @@ session, no recorded edits, or purged telemetry gets coverage 0. With coverage
 below 0.5 the result is **"Insufficient data"** and no score. Missing data is
 never treated as a signal.
 
-## Baseline scorer (`baseline-v1`)
+## Baseline scorer (`baseline-v2`)
 
 | Signal | Weight | Unusual when | Priors ramp (contribution 0 → 1) |
 | --- | --- | --- | --- |
@@ -86,9 +86,18 @@ never treated as a signal.
 
 - **Cohort mode.** With at least 10 peers on the same problem who have usable
   data, each signal uses a robust z-score, (x − median) / max(1.4826·MAD,
-  floor), ramping from z = 2 to z = 5. It is also gated by a lenient absolute
-  floor, so that in a cohort where nobody pastes, a small paste does not look
-  extreme.
+  floor), ramping from z = 2 to z = 5. It is also gated by an absolute floor
+  that is closed up to the priors start and fully open half-way between start
+  and full (e.g. `adjusted_paste_share` 0.25 → 0.50). A value the priors would
+  not flag is therefore never flagged just because peers paste even less; the
+  cohort can only add sensitivity above the priors threshold.
+- **Ruleset history.** `baseline-v1` opened the cohort floor at half the priors
+  start. The Phase 6 synthetic evaluation showed that this flagged most
+  ordinary small snippet pastes in low-paste cohorts, so `baseline-v2` raised
+  it (see [docs/evaluation.md](evaluation.md)). Every stored assessment records
+  its ruleset, so older `baseline-v1` rows remain interpretable. Assessments
+  are append-only: existing rows are not rewritten, and any later re-score
+  (e.g. the contest-end run) is stored as a new `baseline-v2` assessment.
 - **Score.** 100 × Σ wᵢcᵢ / Σ wᵢ, over the signals that are available. A score of
   50 or more puts the subject in the band **"Elevated anomaly score — requires
   review"**; otherwise the band is "Typical".

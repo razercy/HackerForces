@@ -117,7 +117,7 @@ describe("analysis pipeline (synthetic scenarios)", () => {
     expect(await db.select().from(analysisJob).where(eq(analysisJob.contestId, contestId))).toHaveLength(2);
 
     await drainAnalysisJobs(db, { maxJobs: 10, clock: () => at(1.9) });
-    expect(await latestFor(typist)).toMatchObject({ band: "typical", rulesetVersion: "baseline-v1" });
+    expect(await latestFor(typist)).toMatchObject({ band: "typical", rulesetVersion: "baseline-v2" });
     const p = await latestFor(paster);
     expect(p).toMatchObject({ band: "elevated" });
     expect(p!.score).toBeGreaterThanOrEqual(50);
@@ -194,7 +194,7 @@ describe("review access", () => {
   it("an assessment carries score, explanations, features, evidence, data quality and versions", async () => {
     const top = (await listLatestAssessments(db, reviewer, { band: "elevated" }))[0]!;
     const a = await getAssessment(db, reviewer, top.id);
-    expect(a).toMatchObject({ rulesetVersion: "baseline-v1", featureSetVersion: "features-v1", band: "elevated" });
+    expect(a).toMatchObject({ rulesetVersion: "baseline-v2", featureSetVersion: "features-v1", band: "elevated" });
     expect(a.explanations.length).toBeGreaterThan(0);
     expect(a.features.adjusted_paste_share.available).toBe(true);
     expect((a.evidence as { kind: string }[]).some((e) => e.kind === "largest_insert")).toBe(true);
