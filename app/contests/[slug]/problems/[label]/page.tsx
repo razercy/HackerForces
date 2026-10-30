@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Workspace } from "@/components/editor/workspace";
 import { Markdown } from "@/components/markdown";
+import { solveBlock } from "@/lib/contest-phase";
 import { SubmissionsTable } from "@/components/submissions-table";
 import { getCurrentUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
@@ -23,6 +24,7 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
   const { contest, problem, examples } = await loadOr404(getContestProblemForViewer(getDb(), viewer, slug, label));
   const mine = viewer ? await listOwnSubmissions(getDb(), viewer, contest.slug, { label: problem.label, limit: 20 }) : [];
   const canSubmit = !!viewer && contest.isRegistered && !contest.needsAcknowledgement && contest.phase === "running";
+  const blocked = solveBlock(!!viewer, contest);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
@@ -82,16 +84,23 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
           <Workspace contestSlug={contest.slug} label={problem.label} noticeHref={`/contests/${contest.slug}#activity-notice`} />
         ) : (
           <p className="rounded-md border border-dashed border-zinc-300 p-3 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-            {!viewer ? (
+            {blocked === "sign_in" ? (
               <>
                 <Link href="/sign-in" className="underline">
                   Sign in
                 </Link>{" "}
                 and register to submit.
               </>
-            ) : contest.phase === "ended" ? (
+            ) : blocked === "ended" ? (
               "The contest has ended. Submissions are closed."
-            ) : contest.needsAcknowledgement ? (
+            ) : blocked === "register" ? (
+              <>
+                <Link href={`/contests/${contest.slug}`} className="underline">
+                  Register for the contest
+                </Link>{" "}
+                to submit.
+              </>
+            ) : blocked === "acknowledge" ? (
               <>
                 <Link href={`/contests/${contest.slug}#activity-notice`} className="underline">
                   Accept the activity-recording notice
@@ -99,12 +108,7 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
                 to use the editor.
               </>
             ) : (
-              <>
-                <Link href={`/contests/${contest.slug}`} className="underline">
-                  Register for the contest
-                </Link>{" "}
-                to submit.
-              </>
+              "The contest has not started yet. Submissions will open when the contest begins."
             )}
           </p>
         )}
