@@ -81,6 +81,53 @@ describe("role service", () => {
   });
 });
 
+// PGlite has a single connection, so overlapping calls run one after another here. These tests pin
+// the invariant's logic; tests/integration/roles-concurrency.pg.test.ts covers real lock contention.
+describe("last-admin invariant (PGlite: logic, not lock contention)", () => {
+  const adminCount = async (d: Db) => (await d.select().from(userRole).where(eq(userRole.role, "admin"))).length;
+
+  it("overlapping revocations of the only two admins leave exactly one", async () => {
+    const isolated = await createTestDb();
+    try {
+      const a = await insertUser(isolated.db);
+      const b = await insertUser(isolated.db);
+      await grantRole(isolated.db, SYSTEM, a.id, "admin");
+      await grantRole(isolated.db, SYSTEM, b.id, "admin");
+
+      const results = await Promise.allSettled([revokeRole(isolated.db, SYSTEM, a.id, "admin"), revokeRole(isolated.db, SYSTEM, b.id, "admin")]);
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      expect(results.find((r) => r.status === "rejected")).toMatchObject({ reason: { code: "CONFLICT", status: 409 } });
+      expect(await adminCount(isolated.db)).toBe(1);
+      const revokes = await isolated.db.select().from(auditLog).where(eq(auditLog.action, "role.revoke"));
+      expect(revokes).toHaveLength(1);
+    } finally {
+      await isolated.close();
+    }
+  });
+
+  it("guards only the admin role and only its last holder", async () => {
+    const isolated = await createTestDb();
+    try {
+      const a = await insertUser(isolated.db);
+      const other = await insertUser(isolated.db);
+      await grantRole(isolated.db, SYSTEM, a.id, "admin");
+      await grantRole(isolated.db, SYSTEM, a.id, "reviewer");
+
+      // The last admin can lose other roles, and revoking admin from a non-admin is an unaudited no-op.
+      await revokeRole(isolated.db, SYSTEM, a.id, "reviewer");
+      await revokeRole(isolated.db, SYSTEM, other.id, "admin");
+      expect(await getRoles(isolated.db, a.id)).toEqual(["contestant", "admin"]);
+      // A grant restores headroom; then the original admin can go.
+      await grantRole(isolated.db, SYSTEM, other.id, "admin");
+      await revokeRole(isolated.db, SYSTEM, a.id, "admin");
+      await expect(revokeRole(isolated.db, SYSTEM, other.id, "admin")).rejects.toMatchObject({ code: "CONFLICT" });
+      expect(await adminCount(isolated.db)).toBe(1);
+    } finally {
+      await isolated.close();
+    }
+  });
+});
+
 // Drizzle wraps driver errors; the trigger's message is on `cause`.
 const rejectedByGuard = (err: unknown) =>
   err instanceof Error && /append-only/.test(String((err.cause as Error | undefined)?.message));
