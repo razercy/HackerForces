@@ -65,17 +65,17 @@ export function DocLengthChart({ events }: { events: TimelineEvent[] }) {
       <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
         <span>{minutes} min · max {maxLen} chars</span>
         <span>
-          <span className="text-amber-600">●</span> paste
+          <span aria-hidden className="text-amber-500">●</span> paste
         </span>
         <span>
-          <span className="text-orange-600">●</span> drop
+          <span aria-hidden className="text-orange-500">●</span> drop
         </span>
         <span>
-          <span className="text-red-600">●</span> unattributed
+          <span aria-hidden className="text-red-600 dark:text-red-500">●</span> unattributed
         </span>
         <span>▏ left editor</span>
-        <span className="text-green-700">┆ submit</span>
-        <span className="text-sky-700">┆ run</span>
+        <span className="text-green-700 dark:text-green-400">┆ submit</span>
+        <span className="text-sky-700 dark:text-sky-400">┆ run</span>
       </figcaption>
     </figure>
   );

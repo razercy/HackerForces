@@ -43,6 +43,11 @@ Requires Node.js 22 or later.
    npm run seed
    ```
    This creates `setter@demo.test`, `reviewer@demo.test`, `admin@demo.test` and `contestant@demo.test`, plus a published "Demo Round" contest that starts one minute after seeding. Running it again is safe.
+8. Optionally, add a finished contest with **synthetic** integrity data for demos (after step 7):
+   ```bash
+   npm run seed:demo
+   ```
+   Twelve synthetic contestants (`synthetic-01@demo.test` … `synthetic-12@demo.test`, same password) play labelled scenarios through the real telemetry, judging (mock judge) and scoring code. The review queue then has cases in every state: open, awaiting the second confirmation, closed as inconclusive, and a confirmed violation with the contestant's response. Everything in "Integrity Demo Round (synthetic)" is simulated. It is created once; to rebuild it, use a fresh dev branch. Never run either seed against production.
 
 ## Checks
 

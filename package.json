@@ -16,6 +16,7 @@
     "grant-role": "tsx --conditions=react-server scripts/grant-role.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "seed": "tsx --conditions=react-server scripts/seed.ts",
+    "seed:demo": "tsx --conditions=react-server scripts/seed-demo.ts",
     "analyze": "tsx --conditions=react-server scripts/analyze.ts",
     "eval:generate": "tsx eval/generate.ts",
     "eval:run": "node scripts/eval-run.mjs",
