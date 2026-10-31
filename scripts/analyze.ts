@@ -7,7 +7,8 @@ import { getDb } from "@/lib/server/db";
 import { contest, submission } from "@/lib/server/db/schema";
 import { drainAnalysisJobs, enqueueAnalysis } from "@/lib/server/integrity/pipeline";
 
-if (!process.env.DATABASE_URL && existsSync(".env.local")) process.loadEnvFile(".env.local");
+// Variables already set in the shell (e.g. a production DATABASE_URL) take precedence over .env.local.
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 async function main() {
   const slug = process.argv[2];

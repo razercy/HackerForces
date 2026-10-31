@@ -8,7 +8,8 @@ import { getDb } from "@/lib/server/db";
 import { user } from "@/lib/server/db/schema";
 import { SYSTEM, getRoles, grantRole } from "@/lib/server/services/roles";
 
-if (!process.env.DATABASE_URL && existsSync(".env.local")) process.loadEnvFile(".env.local");
+// Variables already set in the shell (e.g. a production DATABASE_URL) take precedence over .env.local.
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 async function main() {
   const [email, role] = process.argv.slice(2);
