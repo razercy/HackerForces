@@ -26,7 +26,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
       </div>
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Ranked by problems solved, then penalty: minutes to each accepted solution plus {PENALTY_MINUTES} minutes per earlier rejected attempt.
-        Compilation errors and example runs are not penalised. ✕ / †: a problem excluded after a human integrity review confirmed by a second reviewer.
+        Compilation errors and example runs are not penalised. ✕ / †: a problem excluded after a human integrity review, confirmed by a second person (a different admin).
       </p>
 
       {rows.length === 0 ? (

@@ -6,7 +6,54 @@ transparent, human-in-the-loop behavioural anomaly review system.
 > Anomaly scores are review aids, not proof of misconduct. Nothing in this
 > system penalises a contestant automatically.
 
+## Walkthrough
+
+Contestants accept a versioned notice that says what the editor records, and what it
+does not, before they can register:
+
+![Registration with the activity-recording notice](docs/screenshots/01-registration-notice.png)
+
+They solve problems in a C++17 editor that shows, at all times, that activity is recorded.
+Code is judged on an isolated Judge0 VM, never inside the web app:
+
+![The editor with the recording indicator and a verdict](docs/screenshots/02-editor-verdict.png)
+
+Reviewers see one assessment per contestant and problem. Elevated scores open a case
+automatically:
+
+![All assessments for a contest](docs/screenshots/03-assessments.png)
+
+A case puts data-quality warnings first, then explains the score signal by signal against
+the contest cohort:
+
+![Why this score](docs/screenshots/04-case-score.png)
+
+The editor timeline shows how the code appeared, here two minutes away from the editor
+followed by one large paste:
+
+![Editor activity for a paste case](docs/screenshots/05-case-timeline.png)
+
+A "confirmed violation" takes effect only after a different admin confirms it:
+
+![A decision waiting for a second person](docs/screenshots/06-two-person-confirmation.png)
+
+Only then is the problem excluded in standings, and the contestant gets a neutral notice
+with the rationale and can respond in writing:
+
+![Standings with one excluded problem](docs/screenshots/07-standings.png)
+
+The contestants, timelines and decisions in these screenshots are **synthetic**
+(`npm run seed:demo`). [docs/demo.md](docs/demo.md) is a ten-minute demo script that
+uses the same data.
+
+## Documentation
+
 - Architecture and deployment boundary: [docs/architecture.md](docs/architecture.md)
+- Integrity signals, scoring and review: [docs/integrity.md](docs/integrity.md)
+- Evaluation on synthetic data, including what it misses: [docs/evaluation.md](docs/evaluation.md)
+- Judge isolation and threat model: [docs/judge.md](docs/judge.md)
+- Deploying to Vercel: [docs/deployment.md](docs/deployment.md)
+- Demo script: [docs/demo.md](docs/demo.md)
 - Roadmap and acceptance criteria: [docs/roadmap.md](docs/roadmap.md)
 
 ## Stack

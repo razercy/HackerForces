@@ -90,7 +90,8 @@ or nowhere at all while `JUDGE_PROVIDER=mock`.
 - A production build (`next build && next start`) passes `scripts/smoke.mjs` locally
   against the Neon dev branch, except for the HSTS check, which only applies over HTTPS.
 - **Vercel production, 2026-10-31** (`https://hacker-forces.vercel.app`):
-  - functions run in `sin1` (Singapore), chosen to sit close to the Neon project;
+  - functions run in `sin1` (Singapore). The Neon project is in `ap-southeast-2`
+    (Sydney), so `syd1` would put the functions next to the database;
   - `scripts/smoke.mjs` passes all 17 checks, including HSTS;
   - the admin bootstrap with `grant-role` works;
   - `/admin/ops` shows `judge0` as reachable, with no dead jobs in either queue;

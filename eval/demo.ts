@@ -144,7 +144,7 @@ export async function seedIntegrityDemo(db: Db, actors: DemoActors, { now = new 
   const [existing] = await db.select({ id: contest.id }).from(contest).where(eq(contest.slug, DEMO_CONTEST_SLUG));
   if (existing) return { contestId: existing.id, slug: DEMO_CONTEST_SLUG, created: false };
 
-  const { setter, reviewer, admin, contestants } = actors;
+  const { setter, contestants } = actors;
   // A finished contest: 4 hours long, ended an hour ago. Everything below happens in the past.
   const startsAt = new Date(now.getTime() - 5 * HOUR);
   const endsAt = new Date(now.getTime() - HOUR);
