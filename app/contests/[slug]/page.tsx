@@ -10,6 +10,9 @@ import { loadOr404 } from "@/lib/server/page-guards";
 import { getContestantNotices } from "@/lib/server/review/cases";
 import { getContestForViewer } from "@/lib/server/services/contests";
 import { acknowledgeNoticeAction, registerAction } from "../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Contest" };
 
 export default async function ContestPage({ params }: PageProps<"/contests/[slug]">) {
   const { slug } = await params;
@@ -18,12 +21,12 @@ export default async function ContestPage({ params }: PageProps<"/contests/[slug
   const notices = viewer ? await getContestantNotices(getDb(), viewer, c.id) : [];
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
+    <main id="main" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{c.title}</h1>
           <PhaseBadge phase={c.phase} />
-          {c.isManager && <span className="text-xs text-zinc-500">You manage this contest</span>}
+          {c.isManager && <span className="text-xs text-zinc-500 dark:text-zinc-400">You manage this contest</span>}
         </div>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           <LocalTime iso={c.startsAt.toISOString()} /> – <LocalTime iso={c.endsAt.toISOString()} />

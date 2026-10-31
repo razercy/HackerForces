@@ -9,7 +9,7 @@ export function TelemetryNotice() {
         <h2 id="activity-notice-title" className="text-base font-semibold">
           {n.title}
         </h2>
-        <span className="font-mono text-xs text-zinc-500">Notice version {n.version}</span>
+        <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">Notice version {n.version}</span>
       </div>
       <p>{n.summary}</p>
       <div className="grid gap-4 sm:grid-cols-2">

@@ -16,7 +16,7 @@ function FieldShell({ label, id, name, errors, hint, children }: { label: string
         {label}
       </label>
       {children}
-      {hint && !err && <p className="text-xs text-zinc-500">{hint}</p>}
+      {hint && !err && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
       {err && (
         <p id={`${id}-error`} className="text-xs text-red-600 dark:text-red-400">
           {err}

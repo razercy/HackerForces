@@ -33,7 +33,7 @@ export function DateTimeField({ name, label, defaultIso, error }: { name: string
   return (
     <div className="flex flex-col gap-1 text-sm">
       <label htmlFor={`${name}-local`} className="font-medium">
-        {label} <span className="font-normal text-zinc-500">(your local time)</span>
+        {label} <span className="font-normal text-zinc-500 dark:text-zinc-400">(your local time)</span>
       </label>
       <input
         // Remount after hydration so defaultValue is computed in the viewer's timezone.

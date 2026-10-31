@@ -16,6 +16,7 @@ import { getSessionTimeline } from "@/lib/server/telemetry/timeline";
 import { isUuid } from "@/lib/validation/ids";
 import type { SubmissionStatus, Verdict } from "@/lib/submissions";
 import { addNoteAction, confirmDecisionAction, recordDecisionAction, reopenCaseAction } from "../../actions";
+import type { Metadata } from "next";
 
 type Contribution = { feature: keyof Features; label: string; value: number | null; weight: number; contribution: number; points: number; mode: string; reference: Record<string, number> | null };
 type Warning = { code: string; message: string; severity?: string };
@@ -30,6 +31,8 @@ function Panel({ title, children, id }: { title: string; children: React.ReactNo
 }
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+export const metadata: Metadata = { title: "Review case" };
 
 export default async function CasePage({ params, searchParams }: PageProps<"/review/cases/[id]">) {
   const { id } = await params;
@@ -73,7 +76,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-2">
-        <nav className="text-sm text-zinc-500">
+        <nav className="text-sm text-zinc-500 dark:text-zinc-400">
           <Link href="/review" className="hover:underline">
             Cases
           </Link>
@@ -85,7 +88,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
           <StatusBadge status={c.status} />
           <BandBadge band={assessment?.band ?? null} score={assessment?.score} />
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Opened <LocalTime iso={c.createdAt.toISOString()} /> ({c.openedReason === "manual" ? "manually" : "automatically for an elevated assessment"}) ·{" "}
           {assessment ? `${assessment.rulesetVersion} / ${assessment.featureSetVersion} · inputs ${assessment.inputsDigest.slice(0, 12)}…` : "no assessment yet"}
         </p>
@@ -101,7 +104,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
           <ul className="list-disc pl-5 text-sm">
             {warnings.map((w, i) => (
               <li key={i} className={w.severity === "warning" ? "text-amber-800 dark:text-amber-300" : ""}>
-                {w.message} <span className="font-mono text-xs text-zinc-500">({w.code})</span>
+                {w.message} <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">({w.code})</span>
               </li>
             ))}
           </ul>
@@ -121,7 +124,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="text-zinc-500">
+              <thead className="text-zinc-500 dark:text-zinc-400">
                 <tr>
                   <th className="py-1 pr-3 font-medium">Signal</th>
                   <th className="py-1 pr-3 font-medium">Value</th>
@@ -135,7 +138,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
                   <tr key={k.feature} className="border-t border-zinc-100 dark:border-zinc-900">
                     <td className="py-1 pr-3">
                       <span className="font-mono">{k.feature}</span>
-                      <span className="block text-zinc-500">{assessment.features[k.feature]?.explanation}</span>
+                      <span className="block text-zinc-500 dark:text-zinc-400">{assessment.features[k.feature]?.explanation}</span>
                     </td>
                     <td className="py-1 pr-3 font-mono">{k.value ?? "n/a"}</td>
                     <td className="py-1 pr-3 font-mono">
@@ -159,7 +162,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
             <pre className="mt-2 max-h-72 overflow-auto rounded bg-zinc-50 p-2 dark:bg-zinc-900">{JSON.stringify({ features: assessment.features, evidence: assessment.evidence, dataQuality: assessment.dataQuality }, null, 2)}</pre>
           </details>
           {assessment.history.length > 1 && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Score history: {assessment.history.map((h) => (h.score == null ? "n/a" : h.score)).join(" ← ")} (newest first)
             </p>
           )}
@@ -170,18 +173,18 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
         <ul className="text-sm">
           {templates.map((t) => (
             <li key={t.kind + t.sourceSha256}>
-              <span className="text-xs uppercase text-zinc-500">{t.kind}</span> {t.name} <span className="font-mono text-xs text-zinc-500">{t.sourceSha256.slice(0, 12)}…</span>
+              <span className="text-xs uppercase text-zinc-500 dark:text-zinc-400">{t.kind}</span> {t.name} <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400">{t.sourceSha256.slice(0, 12)}…</span>
             </li>
           ))}
         </ul>
         {assessment && (
-          <p className="text-xs text-zinc-500">Template coverage of the assessed submission: {Math.round((assessment.features.template_coverage?.value ?? 0) * 100)}%</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Template coverage of the assessed submission: {Math.round((assessment.features.template_coverage?.value ?? 0) * 100)}%</p>
         )}
       </Panel>
 
       <Panel title="Editor activity" id="timeline">
         {sessions.length === 0 ? (
-          <p className="text-sm text-zinc-500">No editor sessions for this problem.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No editor sessions for this problem.</p>
         ) : (
           <>
             <div className="flex flex-wrap gap-2 text-xs">
@@ -194,7 +197,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
             {timeline && (
               <>
                 <DocLengthChart events={timeline.events} />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {timeline.summary.typedChars} typed · {timeline.summary.pastedChars} pasted ({timeline.summary.pasteCount} pastes) · {timeline.summary.undoCount} undos · {timeline.summary.runs} runs ·{" "}
                   {timeline.summary.submits} submits
                 </p>
@@ -249,7 +252,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
             <li key={s.id} className="flex flex-col gap-1 border-t border-zinc-100 pt-2 first:border-0 first:pt-0 dark:border-zinc-900">
               <div className="flex flex-wrap items-center gap-3">
                 <LocalTime iso={s.createdAt.toISOString()} />
-                <span className="text-xs text-zinc-500">{s.kind === "sample_run" ? "examples" : "submit"}</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">{s.kind === "sample_run" ? "examples" : "submit"}</span>
                 <VerdictBadge status={s.status as SubmissionStatus} verdict={s.verdict as Verdict | null} failedTest={s.failedTest} />
                 {s.id === targetSubmission?.id && <span className="text-xs font-medium">assessed</span>}
                 {!s.ideSessionId && <span className="text-xs text-amber-700 dark:text-amber-400">not from the editor</span>}
@@ -264,7 +267,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
       </Panel>
 
       <Panel title="Decisions">
-        {c.decisions.length === 0 && <p className="text-sm text-zinc-500">No decision yet.</p>}
+        {c.decisions.length === 0 && <p className="text-sm text-zinc-500 dark:text-zinc-400">No decision yet.</p>}
         <ol className="flex flex-col gap-3 text-sm">
           {c.decisions.map((d) => (
             <li key={d.id} className="rounded-md bg-zinc-50 p-3 dark:bg-zinc-900">
@@ -295,7 +298,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
           {c.responses.map((r) => (
             <blockquote key={r.id} className="border-l-2 border-zinc-300 pl-3 text-sm dark:border-zinc-700">
               <p className="whitespace-pre-wrap">{r.body}</p>
-              <footer className="text-xs text-zinc-500">
+              <footer className="text-xs text-zinc-500 dark:text-zinc-400">
                 <LocalTime iso={r.createdAt.toISOString()} />
               </footer>
             </blockquote>
@@ -306,7 +309,7 @@ export default async function CasePage({ params, searchParams }: PageProps<"/rev
       <Panel title="Notes">
         {c.notes.map((n) => (
           <p key={n.id} className="text-sm">
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
               {n.authorName} · <LocalTime iso={n.createdAt.toISOString()} />
             </span>
             <span className="block whitespace-pre-wrap">{n.body}</span>

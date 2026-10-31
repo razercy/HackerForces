@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AttachProblemForm, ContestForm, StatusActionButton } from "@/components/manage/contest-forms";
@@ -30,6 +31,8 @@ function nextLabel(used: string[]): string {
   return "";
 }
 
+export const metadata: Metadata = { title: "Edit contest" };
+
 export default async function EditContestPage({ params }: PageProps<"/manage/contests/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
@@ -50,7 +53,7 @@ export default async function EditContestPage({ params }: PageProps<"/manage/con
             View public page
           </Link>
         )}
-        <span className="text-sm text-zinc-500">{c.participants} registered</span>
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">{c.participants} registered</span>
       </div>
 
       <section className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
@@ -123,7 +126,7 @@ export default async function EditContestPage({ params }: PageProps<"/manage/con
                   <p className="font-medium">
                     {s.name}
                     {s.retiredAt && (
-                      <span className="ml-2 text-xs font-normal text-zinc-500">
+                      <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
                         retired <LocalTime iso={s.retiredAt.toISOString()} />
                       </span>
                     )}

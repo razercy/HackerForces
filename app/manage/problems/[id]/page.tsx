@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AddExampleForm, AddTestForm, ReferenceSolutionForm } from "@/components/manage/problem-data-forms";
 import { ProblemForm } from "@/components/manage/problem-form";
 import { SubmitButton } from "@/components/ui/form";
@@ -29,6 +30,8 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 const kb = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`);
+
+export const metadata: Metadata = { title: "Edit problem" };
 
 export default async function EditProblemPage({ params }: PageProps<"/manage/problems/[id]">) {
   const { id } = await params;
@@ -68,7 +71,7 @@ export default async function EditProblemPage({ params }: PageProps<"/manage/pro
       <Section title="Hidden tests" description="Never shown to contestants. Bodies are previewed here, not displayed in full.">
         {p.tests.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="text-zinc-500">
+            <thead className="text-zinc-500 dark:text-zinc-400">
               <tr>
                 <th className="py-1 font-medium">#</th>
                 <th className="py-1 font-medium">Input</th>
@@ -81,11 +84,11 @@ export default async function EditProblemPage({ params }: PageProps<"/manage/pro
                 <tr key={t.id} className="border-t border-zinc-100 align-top dark:border-zinc-900">
                   <td className="py-2">{t.ordinal}</td>
                   <td className="py-2">
-                    <span className="text-xs text-zinc-500">{kb(t.inputBytes)}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{kb(t.inputBytes)}</span>
                     <pre className="max-w-xs truncate font-mono text-xs">{t.inputPreview}</pre>
                   </td>
                   <td className="py-2">
-                    <span className="text-xs text-zinc-500">{kb(t.outputBytes)}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{kb(t.outputBytes)}</span>
                     <pre className="max-w-xs truncate font-mono text-xs">{t.outputPreview}</pre>
                   </td>
                   <td className="py-2 text-right">

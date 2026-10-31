@@ -7,6 +7,9 @@ import { loadOr404 } from "@/lib/server/page-guards";
 import { getContestantNotices } from "@/lib/server/review/cases";
 import { getContestForViewer } from "@/lib/server/services/contests";
 import { submitResponseAction } from "./actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Integrity review decisions" };
 
 /** The contestant's own view of integrity decisions that took effect for them. Neutral; reviewer identities are withheld. */
 export default async function IntegrityNoticePage({ params }: PageProps<"/contests/[slug]/integrity">) {
@@ -16,8 +19,8 @@ export default async function IntegrityNoticePage({ params }: PageProps<"/contes
   const notices = await getContestantNotices(getDb(), viewer, c.id);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8">
-      <nav className="text-sm text-zinc-500">
+    <main id="main" className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8">
+      <nav className="text-sm text-zinc-500 dark:text-zinc-400">
         <Link href={`/contests/${c.slug}`} className="hover:underline">
           {c.title}
         </Link>
@@ -37,16 +40,16 @@ export default async function IntegrityNoticePage({ params }: PageProps<"/contes
               {n.inEffect ? "It is currently excluded from the standings." : "This decision has since been reversed and no longer applies."}
             </p>
             <div className="rounded-md bg-zinc-50 p-3 text-sm dark:bg-zinc-900">
-              <p className="text-xs font-medium text-zinc-500">Reason given</p>
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Reason given</p>
               <p className="mt-1 whitespace-pre-wrap">{n.rationale}</p>
             </div>
             {n.responses.length > 0 && (
               <div className="flex flex-col gap-2 text-sm">
-                <p className="text-xs font-medium text-zinc-500">Your responses</p>
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Your responses</p>
                 {n.responses.map((r) => (
                   <blockquote key={r.id} className="border-l-2 border-zinc-300 pl-3 dark:border-zinc-700">
                     <p className="whitespace-pre-wrap">{r.body}</p>
-                    <footer className="text-xs text-zinc-500">
+                    <footer className="text-xs text-zinc-500 dark:text-zinc-400">
                       <LocalTime iso={r.createdAt.toISOString()} />
                     </footer>
                   </blockquote>

@@ -3,6 +3,9 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { listManageableProblems } from "@/lib/server/services/problems";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Problems" };
 
 export default async function ProblemsPage() {
   const problems = await loadOr404(requireUser().then((u) => listManageableProblems(getDb(), u)));
@@ -18,7 +21,7 @@ export default async function ProblemsPage() {
         <p className="text-sm text-zinc-600 dark:text-zinc-400">No problems yet.</p>
       ) : (
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
+          <thead className="border-b border-zinc-200 text-zinc-500 dark:text-zinc-400 dark:border-zinc-800">
             <tr>
               <th className="py-2 font-medium">Title</th>
               <th className="py-2 font-medium">Slug</th>

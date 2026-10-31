@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { hasPermission } from "@/lib/auth/roles";
 import { getCurrentUser } from "@/lib/server/authz";
+import { NavLink } from "./nav-link";
 import { SignOutButton } from "./sign-out-button";
 
 export async function SiteHeader() {
@@ -16,33 +17,21 @@ export async function SiteHeader() {
           <Link href="/" className="font-semibold">
             HackerForces
           </Link>
-          <Link href="/contests" className="hover:underline">
-            Contests
-          </Link>
+          <NavLink href="/contests">Contests</NavLink>
           {user && (
-            <Link href="/templates" className="hover:underline">
-              Templates
-            </Link>
+            <NavLink href="/templates">Templates</NavLink>
           )}
           {canManage && (
-            <Link href="/manage" className="hover:underline">
-              Manage
-            </Link>
+            <NavLink href="/manage">Manage</NavLink>
           )}
           {canReview && (
-            <Link href="/review" className="hover:underline">
-              Review
-            </Link>
+            <NavLink href="/review">Review</NavLink>
           )}
           {canAudit && (
-            <Link href="/admin/audit" className="hover:underline">
-              Audit
-            </Link>
+            <NavLink href="/admin/audit">Audit</NavLink>
           )}
           {canOps && (
-            <Link href="/admin/ops" className="hover:underline">
-              Ops
-            </Link>
+            <NavLink href="/admin/ops">Ops</NavLink>
           )}
         </nav>
         <div className="flex items-center gap-3 text-sm">

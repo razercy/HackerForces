@@ -4,6 +4,9 @@ import { getCurrentUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { PENALTY_MINUTES, getStandings } from "@/lib/server/services/submissions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Standings" };
 
 export default async function StandingsPage({ params }: PageProps<"/contests/[slug]/standings">) {
   const { slug } = await params;
@@ -11,8 +14,8 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
   const { contest, rows } = await loadOr404(getStandings(getDb(), viewer, slug));
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-8">
-      <nav className="text-sm text-zinc-500">
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-8">
+      <nav className="text-sm text-zinc-500 dark:text-zinc-400">
         <Link href={`/contests/${contest.slug}`} className="hover:underline">
           {contest.title}
         </Link>
@@ -21,7 +24,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
         <h1 className="text-2xl font-semibold">Standings</h1>
         <PhaseBadge phase={contest.phase} />
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Ranked by problems solved, then penalty: minutes to each accepted solution plus {PENALTY_MINUTES} minutes per earlier rejected attempt.
         Compilation errors and example runs are not penalised. ✕ / †: a problem excluded after a human integrity review confirmed by a second reviewer.
       </p>
@@ -31,7 +34,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
+            <thead className="border-b border-zinc-200 text-zinc-500 dark:text-zinc-400 dark:border-zinc-800">
               <tr>
                 <th className="py-2 pr-3 text-left font-medium">#</th>
                 <th className="py-2 pr-3 text-left font-medium">Contestant</th>
@@ -51,7 +54,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
                   <td className="py-2 pr-3">
                     {r.name}
                     {r.hasExclusion && (
-                      <sup className="ml-1 text-zinc-500" title="One or more problems excluded after integrity review">
+                      <sup className="ml-1 text-zinc-500 dark:text-zinc-400" title="One or more problems excluded after integrity review">
                         †
                       </sup>
                     )}
@@ -72,7 +75,7 @@ export default async function StandingsPage({ params }: PageProps<"/contests/[sl
                         {c.solved ? (
                           <span className="font-medium text-green-700 dark:text-green-400" title={`Solved at minute ${c.solvedAtMinute}`}>
                             +{c.rejected || ""}
-                            <span className="block text-[10px] font-normal text-zinc-500">{c.solvedAtMinute}′</span>
+                            <span className="block text-[10px] font-normal text-zinc-500 dark:text-zinc-400">{c.solvedAtMinute}′</span>
                           </span>
                         ) : c.rejected > 0 ? (
                           <span className="text-red-600 dark:text-red-400">−{c.rejected}</span>

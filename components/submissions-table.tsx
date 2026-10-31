@@ -20,7 +20,7 @@ export function SubmissionsTable({ rows, contestSlug, showProblem = true }: { ro
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
+        <thead className="border-b border-zinc-200 text-zinc-500 dark:text-zinc-400 dark:border-zinc-800">
           <tr>
             <th className="py-2 pr-3 font-medium">When</th>
             {showProblem && <th className="py-2 pr-3 font-medium">Problem</th>}

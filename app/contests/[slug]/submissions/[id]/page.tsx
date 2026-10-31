@@ -7,6 +7,9 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { getSubmissionForViewer } from "@/lib/server/services/submissions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Submission" };
 
 export default async function SubmissionPage({ params }: PageProps<"/contests/[slug]/submissions/[id]">) {
   const { slug, id } = await params;
@@ -26,8 +29,8 @@ export default async function SubmissionPage({ params }: PageProps<"/contests/[s
   ];
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-      <nav className="text-sm text-zinc-500">
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+      <nav className="text-sm text-zinc-500 dark:text-zinc-400">
         <Link href={`/contests/${s.contestSlug}`} className="hover:underline">
           {s.contestTitle}
         </Link>
@@ -48,7 +51,7 @@ export default async function SubmissionPage({ params }: PageProps<"/contests/[s
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         {facts.map(([k, v]) => (
           <div key={k} className="flex gap-2">
-            <dt className="w-24 shrink-0 text-zinc-500">{k}</dt>
+            <dt className="w-24 shrink-0 text-zinc-500 dark:text-zinc-400">{k}</dt>
             <dd>{v}</dd>
           </div>
         ))}
@@ -64,7 +67,7 @@ export default async function SubmissionPage({ params }: PageProps<"/contests/[s
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-semibold">Source</h2>
         <pre className="max-h-[36rem] overflow-auto rounded-md bg-zinc-50 p-3 font-mono text-xs leading-5 dark:bg-zinc-900">{s.source}</pre>
-        <p className="font-mono text-xs break-all text-zinc-500">SHA-256 {s.sourceSha256}</p>
+        <p className="font-mono text-xs break-all text-zinc-500 dark:text-zinc-400">SHA-256 {s.sourceSha256}</p>
       </section>
     </main>
   );

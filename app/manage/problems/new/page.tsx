@@ -1,5 +1,8 @@
 import { ProblemForm } from "@/components/manage/problem-form";
 import { createProblemAction } from "../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "New problem" };
 
 export default function NewProblemPage() {
   return (

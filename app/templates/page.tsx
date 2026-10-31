@@ -6,6 +6,9 @@ import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { listOwnTemplates } from "@/lib/server/services/templates";
 import { archiveTemplateAction, createTemplateAction, saveVersionAction } from "./actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "My templates" };
 
 export default async function TemplatesPage() {
   const user = await loadOr404(requireUser());
@@ -14,7 +17,7 @@ export default async function TemplatesPage() {
   const archived = templates.filter((t) => t.archivedAt);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
+    <main id="main" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">My templates</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

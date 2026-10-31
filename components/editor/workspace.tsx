@@ -182,7 +182,7 @@ export function Workspace({ contestSlug, label, noticeHref }: { contestSlug: str
           onUpdate={onEditorUpdate}
         />
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Drafts are kept in this browser only. &ldquo;Run examples&rdquo; checks the public examples and does not count; &ldquo;Submit&rdquo; is judged on hidden tests and
         counts for standings. Every run and submission stores an exact copy of your code. Press Esc then Tab to leave the editor.
       </p>
@@ -192,21 +192,24 @@ export function Workspace({ contestSlug, label, noticeHref }: { contestSlug: str
           {error}
         </p>
       )}
-      {result && (
-        <div aria-live="polite" className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-medium">{result.kind === "sample_run" ? "Example run" : "Submission"}</span>
-            <VerdictBadge status={result.status} verdict={result.verdict} failedTest={result.failedTest} />
-            {result.status === "judged" && result.verdict !== "compilation_error" && (
-              <span className="text-zinc-600 dark:text-zinc-400">
-                {result.passedTests}/{result.totalTests} tests · {result.timeMs} ms · {Math.round((result.memoryKb ?? 0) / 1024)} MB
-              </span>
-            )}
+      {/* The live region is always mounted: screen readers miss announcements from regions added with their content. */}
+      <div aria-live="polite">
+        {result && (
+          <div className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-medium">{result.kind === "sample_run" ? "Example run" : "Submission"}</span>
+              <VerdictBadge status={result.status} verdict={result.verdict} failedTest={result.failedTest} />
+              {result.status === "judged" && result.verdict !== "compilation_error" && (
+                <span className="text-zinc-600 dark:text-zinc-400">
+                  {result.passedTests}/{result.totalTests} tests · {result.timeMs} ms · {Math.round((result.memoryKb ?? 0) / 1024)} MB
+                </span>
+              )}
+            </div>
+            {result.compileOutput && <pre className="max-h-48 overflow-auto rounded bg-zinc-50 p-2 font-mono text-xs dark:bg-zinc-900">{result.compileOutput}</pre>}
+            {result.status === "failed" && <p className="text-amber-700 dark:text-amber-400">The platform could not judge this submission. It does not count against you.</p>}
           </div>
-          {result.compileOutput && <pre className="max-h-48 overflow-auto rounded bg-zinc-50 p-2 font-mono text-xs dark:bg-zinc-900">{result.compileOutput}</pre>}
-          {result.status === "failed" && <p className="text-amber-700 dark:text-amber-400">The platform could not judge this submission. It does not count against you.</p>}
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
@@ -223,7 +226,7 @@ function RecordingIndicator({ status, noticeHref }: { status: RecorderStatus; no
   const v = INDICATOR[status.state];
   return (
     <span role="status" className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-2.5 py-0.5 text-xs dark:border-zinc-700">
-      <span aria-hidden className={`h-2 w-2 rounded-full ${v.dot} ${status.state === "recording" ? "animate-pulse" : ""}`} />
+      <span aria-hidden className={`h-2 w-2 rounded-full ${v.dot} ${status.state === "recording" ? "motion-safe:animate-pulse" : ""}`} />
       <span>
         {v.text}
         {status.message && status.state !== "recording" ? ` (${status.message})` : ""}

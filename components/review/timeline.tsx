@@ -10,7 +10,7 @@ export const ORIGIN_STYLES: Record<string, { label: string; color: string; text:
   "input.drop": { label: "Drop", color: "#f97316", text: "text-orange-700 dark:text-orange-400" },
   other: { label: "Unattributed", color: "#dc2626", text: "text-red-700 dark:text-red-400" },
   set: { label: "Unattributed", color: "#dc2626", text: "text-red-700 dark:text-red-400" },
-  delete: { label: "Delete", color: "#a1a1aa", text: "text-zinc-500" },
+  delete: { label: "Delete", color: "#a1a1aa", text: "text-zinc-500 dark:text-zinc-400" },
   undo: { label: "Undo", color: "#8b5cf6", text: "text-violet-700 dark:text-violet-400" },
   redo: { label: "Redo", color: "#8b5cf6", text: "text-violet-700 dark:text-violet-400" },
 };
@@ -20,7 +20,7 @@ const n = (v: unknown) => (typeof v === "number" ? v : 0);
 /** Document length over time, with non-typed insertions and focus loss marked. Server-rendered SVG. */
 export function DocLengthChart({ events }: { events: TimelineEvent[] }) {
   const edits = events.filter((e) => e.type === "edit");
-  if (edits.length < 2) return <p className="text-sm text-zinc-500">Not enough edits to chart.</p>;
+  if (edits.length < 2) return <p className="text-sm text-zinc-500 dark:text-zinc-400">Not enough edits to chart.</p>;
   const t0 = events[0]!.clientTs.getTime();
   const t1 = events.at(-1)!.clientTs.getTime();
   const maxLen = Math.max(1, ...edits.map((e) => n(e.payload.docLength)));
@@ -62,7 +62,7 @@ export function DocLengthChart({ events }: { events: TimelineEvent[] }) {
           return null;
         })}
       </svg>
-      <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+      <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
         <span>{minutes} min · max {maxLen} chars</span>
         <span>
           <span className="text-amber-600">●</span> paste
@@ -91,7 +91,7 @@ function isNotable(e: TimelineEvent) {
 
 /** Event list. By default only notable events plus detected gaps; `all` shows everything. */
 export function EventTable({ events, all }: { events: TimelineEvent[]; all: boolean }) {
-  if (events.length === 0) return <p className="text-sm text-zinc-500">No events.</p>;
+  if (events.length === 0) return <p className="text-sm text-zinc-500 dark:text-zinc-400">No events.</p>;
   const t0 = events[0]!.clientTs.getTime();
   type Row = { kind: "event"; e: TimelineEvent } | { kind: "gap"; afterSeq: number; ms: number; missing: number };
   const rows: Row[] = [];
@@ -111,7 +111,7 @@ export function EventTable({ events, all }: { events: TimelineEvent[]; all: bool
   return (
     <div className="max-h-96 overflow-auto rounded-md border border-zinc-200 dark:border-zinc-800">
       <table className="w-full text-left font-mono text-xs">
-        <thead className="sticky top-0 bg-white text-zinc-500 dark:bg-zinc-950">
+        <thead className="sticky top-0 bg-white text-zinc-500 dark:text-zinc-400 dark:bg-zinc-950">
           <tr>
             <th className="px-2 py-1 font-medium">seq</th>
             <th className="px-2 py-1 font-medium">time</th>
@@ -129,8 +129,8 @@ export function EventTable({ events, all }: { events: TimelineEvent[]; all: bool
               </tr>
             ) : (
               <tr key={r.e.seq} className="border-t border-zinc-100 dark:border-zinc-900">
-                <td className="px-2 py-1 text-zinc-500">{r.e.seq}</td>
-                <td className="px-2 py-1 text-zinc-500">{fmt(r.e.clientTs.getTime() - t0)}</td>
+                <td className="px-2 py-1 text-zinc-500 dark:text-zinc-400">{r.e.seq}</td>
+                <td className="px-2 py-1 text-zinc-500 dark:text-zinc-400">{fmt(r.e.clientTs.getTime() - t0)}</td>
                 <td className={`px-2 py-1 ${r.e.type === "edit" ? (ORIGIN_STYLES[String(r.e.payload.origin)]?.text ?? "") : ""}`}>
                   {r.e.type === "edit" ? (ORIGIN_STYLES[String(r.e.payload.origin)]?.label ?? String(r.e.payload.origin)) : r.e.type}
                 </td>

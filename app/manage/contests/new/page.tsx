@@ -1,5 +1,8 @@
 import { ContestForm } from "@/components/manage/contest-forms";
 import { createContestAction } from "../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "New contest" };
 
 export default function NewContestPage() {
   return (

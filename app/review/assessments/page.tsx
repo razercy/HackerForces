@@ -6,6 +6,9 @@ import { getDb } from "@/lib/server/db";
 import { listLatestAssessments } from "@/lib/server/integrity/review";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { openCaseAction } from "../actions";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "All assessments" };
 
 export default async function AssessmentsPage({ searchParams }: PageProps<"/review/assessments">) {
   const sp = await searchParams;
@@ -22,7 +25,7 @@ export default async function AssessmentsPage({ searchParams }: PageProps<"/revi
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
+          <thead className="border-b border-zinc-200 text-zinc-500 dark:text-zinc-400 dark:border-zinc-800">
             <tr>
               <th className="py-2 pr-3 font-medium">Contestant</th>
               <th className="py-2 pr-3 font-medium">Contest / problem</th>

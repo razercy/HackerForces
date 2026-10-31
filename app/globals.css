@@ -25,6 +25,15 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* A visible keyboard focus ring everywhere. In the base layer, so utilities such as
+   form inputs' own ring styles still take precedence. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
 /* Rendered problem statements */
 .markdown > * + * { margin-top: 0.75rem; }
 .markdown ul { list-style: disc; padding-left: 1.5rem; }

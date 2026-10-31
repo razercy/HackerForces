@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { listCases } from "@/lib/server/review/cases";
+import type { Metadata } from "next";
 
 const emptyToUndef = (v: unknown) => (v === "" ? undefined : v);
 const filtersSchema = z.object({
@@ -19,6 +20,8 @@ const filtersSchema = z.object({
   maxScore: z.preprocess(emptyToUndef, z.coerce.number().min(0).max(100).optional()),
   page: z.preprocess(emptyToUndef, z.coerce.number().int().min(1).optional()),
 });
+
+export const metadata: Metadata = { title: "Review cases" };
 
 export default async function ReviewQueuePage({ searchParams }: PageProps<"/review">) {
   const raw = Object.fromEntries(Object.entries(await searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
@@ -72,7 +75,7 @@ export default async function ReviewQueuePage({ searchParams }: PageProps<"/revi
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 text-zinc-500 dark:border-zinc-800">
+            <thead className="border-b border-zinc-200 text-zinc-500 dark:text-zinc-400 dark:border-zinc-800">
               <tr>
                 <th className="py-2 pr-3 font-medium">Contestant</th>
                 <th className="py-2 pr-3 font-medium">Contest / problem</th>

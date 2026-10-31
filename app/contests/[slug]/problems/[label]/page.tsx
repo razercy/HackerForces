@@ -8,6 +8,7 @@ import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { getContestProblemForViewer } from "@/lib/server/services/contests";
 import { listOwnSubmissions } from "@/lib/server/services/submissions";
+import type { Metadata } from "next";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -16,6 +17,12 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
       {children}
     </section>
   );
+}
+
+// Only the label from the URL, so the title never reveals more than the page itself may show.
+export async function generateMetadata({ params }: PageProps<"/contests/[slug]/problems/[label]">): Promise<Metadata> {
+  const { label } = await params;
+  return { title: /^[a-z][0-9]?$/i.test(label) ? `Problem ${label.toUpperCase()}` : "Problem" };
 }
 
 export default async function ProblemPage({ params }: PageProps<"/contests/[slug]/problems/[label]">) {
@@ -27,8 +34,8 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
   const blocked = solveBlock(!!viewer, contest);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-      <nav className="text-sm text-zinc-500">
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+      <nav className="text-sm text-zinc-500 dark:text-zinc-400">
         <Link href={`/contests/${contest.slug}`} className="hover:underline">
           {contest.title}
         </Link>
@@ -60,11 +67,11 @@ export default async function ProblemPage({ params }: PageProps<"/contests/[slug
             <div key={ex.ordinal} className="flex flex-col gap-2">
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs font-medium text-zinc-500">Input</p>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Input</p>
                   <pre className="overflow-x-auto rounded-md bg-zinc-50 p-3 font-mono text-xs dark:bg-zinc-900">{ex.input}</pre>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-zinc-500">Output</p>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Output</p>
                   <pre className="overflow-x-auto rounded-md bg-zinc-50 p-3 font-mono text-xs dark:bg-zinc-900">{ex.output}</pre>
                 </div>
               </div>

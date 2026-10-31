@@ -7,6 +7,7 @@ import { getDb } from "@/lib/server/db";
 import { getJudge } from "@/lib/server/judge";
 import { judgeStatus, queueHealth } from "@/lib/server/services/ops";
 import { requeueAnalysisJobAction, requeueJudgeJobAction } from "./actions";
+import type { Metadata } from "next";
 
 function Counts({ byStatus }: { byStatus: Record<string, number> }) {
   const order = ["pending", "claimed", "done", "dead"];
@@ -14,7 +15,7 @@ function Counts({ byStatus }: { byStatus: Record<string, number> }) {
     <dl className="flex flex-wrap gap-4 text-sm">
       {order.map((s) => (
         <div key={s} className="flex flex-col">
-          <dt className="text-xs uppercase text-zinc-500">{s}</dt>
+          <dt className="text-xs uppercase text-zinc-500 dark:text-zinc-400">{s}</dt>
           <dd className={`text-lg font-semibold ${s === "dead" && byStatus[s] ? "text-red-700 dark:text-red-400" : ""}`}>{byStatus[s] ?? 0}</dd>
         </div>
       ))}
@@ -22,14 +23,16 @@ function Counts({ byStatus }: { byStatus: Record<string, number> }) {
   );
 }
 
+export const metadata: Metadata = { title: "Operations" };
+
 export default async function OpsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
-  if (!hasPermission(user.roles, "ops:manage")) return <main className="mx-auto w-full max-w-5xl px-4 py-16 text-sm">No access. Operations are available to admins.</main>;
+  if (!hasPermission(user.roles, "ops:manage")) return <main id="main" className="mx-auto w-full max-w-5xl px-4 py-16 text-sm">No access. Operations are available to admins.</main>;
   const [health, judge] = await Promise.all([queueHealth(getDb(), user), judgeStatus(getJudge())]);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+    <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-semibold">Operations</h1>
 
       <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
@@ -41,13 +44,13 @@ export default async function OpsPage() {
         </p>
         <Counts byStatus={health.judge.byStatus} />
         {health.judge.oldestPending && (
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Oldest pending job created <LocalTime iso={health.judge.oldestPending.toISOString()} />
           </p>
         )}
         {health.judge.dead.length > 0 && (
           <table className="w-full text-left text-xs">
-            <thead className="text-zinc-500">
+            <thead className="text-zinc-500 dark:text-zinc-400">
               <tr>
                 <th className="py-1 font-medium">Dead since</th>
                 <th className="py-1 font-medium">Attempts</th>

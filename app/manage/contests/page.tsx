@@ -6,6 +6,9 @@ import { requireUser } from "@/lib/server/authz";
 import { getDb } from "@/lib/server/db";
 import { loadOr404 } from "@/lib/server/page-guards";
 import { listManageableContests } from "@/lib/server/services/contests";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Manage contests" };
 
 export default async function ManageContestsPage() {
   const contests = await loadOr404(requireUser().then((u) => listManageableContests(getDb(), u)));
@@ -28,7 +31,7 @@ export default async function ManageContestsPage() {
                 <Link href={`/manage/contests/${c.id}`} className="font-medium hover:underline">
                   {c.title}
                 </Link>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   <LocalTime iso={c.startsAt.toISOString()} /> – <LocalTime iso={c.endsAt.toISOString()} />
                 </p>
               </div>
