@@ -45,10 +45,15 @@ or nowhere at all while `JUDGE_PROVIDER=mock`.
 ## 3. Bootstrap and verify
 
 1. Sign up on the deployed site, then grant yourself admin. Run this from your
-   machine with the production `DATABASE_URL`:
-   ```bash
-   npm run grant-role -- you@example.com admin
+   machine, in the repository, with the production `DATABASE_URL` set in the shell
+   only for this command (PowerShell shown):
+   ```powershell
+   $env:DATABASE_URL = "<production pooled URL>"; npm run grant-role -- you@example.com admin; Remove-Item Env:DATABASE_URL
    ```
+   The script also loads `.env.local`, because environment validation needs the
+   other server variables. A variable set in the shell always takes precedence, so
+   the command writes to the production branch, not your development one. It prints
+   the account's roles. Sign out and back in for the new role to apply.
 2. Run the smoke test against the deployment. It is read-only:
    ```bash
    node scripts/smoke.mjs https://<your-domain>
@@ -84,4 +89,13 @@ or nowhere at all while `JUDGE_PROVIDER=mock`.
 
 - A production build (`next build && next start`) passes `scripts/smoke.mjs` locally
   against the Neon dev branch, except for the HSTS check, which only applies over HTTPS.
-- Not yet verified on Vercel itself. Deployment needs the maintainer's Vercel account.
+- **Vercel production, 2026-10-31** (`https://hacker-forces.vercel.app`):
+  - functions run in `sin1` (Singapore), chosen to sit close to the Neon project;
+  - `scripts/smoke.mjs` passes all 17 checks, including HSTS;
+  - the admin bootstrap with `grant-role` works;
+  - `/admin/ops` shows `judge0` as reachable, with no dead jobs in either queue;
+  - a real C++17 submission was judged Accepted (3/3 hidden tests) by the Judge0 VM.
+- **Choose the function region to match the database.** The default (`iad1`) puts
+  every query on a long round trip if the database is in Asia. Set it under
+  Settings → Functions to the Vercel region nearest your Neon project, and keep
+  the judge VM nearby too.
